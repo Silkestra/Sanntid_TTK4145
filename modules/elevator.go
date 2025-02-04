@@ -1,6 +1,7 @@
 package elevator
 
 import "fmt"
+import "elevio"
 type ElevatorBehaviour int
 
 const (
