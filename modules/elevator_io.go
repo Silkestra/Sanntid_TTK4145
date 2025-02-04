@@ -1,11 +1,18 @@
 package elevio
 
+<<<<<<< HEAD:modules/elevator_io.go
 import (
 	"fmt"
 	"net"
 	"sync"
 	"time"
 )
+=======
+import "time"
+import "sync"
+import "net"
+import "fmt"
+>>>>>>> origin/CabRequests:elevio/elevator_io.go
 
 const _pollRate = 20 * time.Millisecond
 
