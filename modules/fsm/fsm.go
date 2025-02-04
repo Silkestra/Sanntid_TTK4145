@@ -1,8 +1,9 @@
-package elevator
+package fsm
 
 import (
 	"fmt"
 	"time"
+	"elevio"
 )
 
 type Elevator struct {

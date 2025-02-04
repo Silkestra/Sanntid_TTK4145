@@ -1,7 +1,7 @@
 package main
 
 import (
-	"elevio"
+	"Driver-go/modules/elevio"
 	"fmt"
 )
 
