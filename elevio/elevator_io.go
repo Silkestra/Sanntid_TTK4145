@@ -5,8 +5,6 @@ import "sync"
 import "net"
 import "fmt"
 
-
-
 const _pollRate = 20 * time.Millisecond
 
 var _initialized    bool = false
@@ -127,9 +125,6 @@ func PollObstructionSwitch(receiver chan<- bool) {
 		prev = v
 	}
 }
-
-
-
 
 func GetButton(button ButtonType, floor int) bool {
 	a := read([4]byte{6, byte(button), byte(floor), 0})

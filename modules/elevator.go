@@ -86,3 +86,4 @@ func elevator_uninitialized(void) *Elevator{
     p := Elevator{floor: -1, dirn: D_Stop, behaviour : EB_Idle, config: conf}
     return &p
 }
+
