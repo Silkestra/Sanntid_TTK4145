@@ -1,11 +1,15 @@
 package main
 
 import (
+	"Driver-go/modules/elevator"
 	"Driver-go/modules/elevio"
+	"Driver-go/modules/fsm"
+	"Driver-go/modules/timer"
 	"fmt"
 )
-
+type Elevator = elevator.Elevator
 func main() {
+	var elev = elevator.Elevator_uninitialized()
 
 	numFloors := 4
 
@@ -18,26 +22,25 @@ func main() {
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
+	drv_timeout := make(chan bool)
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
-
+	go timer.PollTimeout(drv_timeout)
+	
 	for {
 		select {
 		case a := <-drv_buttons:
 			fmt.Printf("%+v\n", a)
-			elevio.SetButtonLamp(a.Button, a.Floor, true)
+			//elevio.SetButtonLamp(a.Button, a.Floor, true)
+			fsm.FsmOnRequestButtonPress(a.Floor, a.Button, elev)
+			fmt.Printf("%+v\n", a)
 
 		case a := <-drv_floors:
-			fmt.Printf("%+v\n", a)
-			if a == numFloors-1 {
-				d = elevio.MD_Down
-			} else if a == 0 {
-				d = elevio.MD_Up
-			}
-			elevio.SetMotorDirection(d)
+			fmt.Printf("check5")
+			fsm.FsmOnFloorArrival(a, elev)
 
 		case a := <-drv_obstr:
 			fmt.Printf("%+v\n", a)
@@ -54,6 +57,11 @@ func main() {
 					elevio.SetButtonLamp(b, f, false)
 				}
 			}
+		
+		case a := <-drv_timeout:
+			fmt.Printf("%+v\n", a)
+			fsm.FsmOnDoorTimeout(elev)
 		}
+	fmt.Println("behvaiour", elev.Behaviour)
 	}
 }

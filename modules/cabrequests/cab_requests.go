@@ -1,20 +1,22 @@
 package cabrequests
 
-import(
-    "fmt"
-    "Driver-Go/elevator"
+import (
+	"Driver-go/modules/elevator"
+	"Driver-go/modules/elevio"
+	"fmt"
 )
+type Elevator = elevator.Elevator
+type Button = elevio.ButtonType
 
-type DirnBehaviourPair int
-const (
-	Dirn dirn = iota
-	ElevatorBehaviour behaviour
-)
+type DirnBehaviourPair struct{
+	Dirn elevio.MotorDirection   
+	Behaviour elevator.ElevatorBehaviour  
+}
 
-func requests_above(e Elevator)  bool {
-    for f := e.floor + 1; f < N_FLOORS; f++ {
-        for btn := 0; btn < N_BUTTONS; btn++ {
-            if e.requests[f][btn] {
+func requests_above(e *Elevator) bool {
+    for f := e.Floor + 1; f < elevio.N_FLOORS; f++ {
+        for btn := 0; btn < elevio.N_BUTTONS; btn++ {
+            if (e.Requests[f][btn]) {
                 return true 
             }
         }
@@ -22,10 +24,10 @@ func requests_above(e Elevator)  bool {
     return false 
 }
 
-func requests_below (e Elevator) bool {
-    for f := 0; f < e.floor; f++{
-        for btn := 0; btn < N_BUTTONS; btn++{
-            if e.requests[f][btn]{
+func requests_below(e *Elevator) bool {
+    for f := 0; f < e.Floor; f++{
+        for btn := 0; btn < elevio.N_BUTTONS; btn++{
+            if (e.Requests[f][btn]){
                 return true
             }
         }
@@ -33,121 +35,134 @@ func requests_below (e Elevator) bool {
     return false 
 }
 
-func requests_here(e Elevator) bool {
-    for btn:= 0; btn < N_BUTTONS; btn ++{
-        if e.requests[e.floor][btn]{
+func requests_here(e *Elevator) bool {
+    for btn:= 0; btn < elevio.N_BUTTONS; btn ++{
+        if (e.Requests[e.Floor][btn]){
             return true 
         }
     }
     return false 
 }
 
-func requests_chooseDirection(e Elevator) DirnBehaviourPair {
-	switch e.dirn {
-	case D_Up:
-		if requestsAbove(e) {
-			return DirnBehaviourPair{D_Up, EB_Moving}
-		} else if requestsHere(e) {
-			return DirnBehaviourPair{D_Down, EB_DoorOpen}
-		} else if requestsBelow(e) {
-			return DirnBehaviourPair{D_Down, EB_Moving}
+func Requests_chooseDirection(e *Elevator) DirnBehaviourPair {
+	switch e.Dirn {
+	case elevio.MD_Up:
+		if requests_above(e) {
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_Moving}
+		} else if requests_here(e) {
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_DoorOpen}
+		} else if requests_below(e) {
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_Moving}
 		} else {
-			return DirnBehaviourPair{D_Stop, EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 		}
 
-	case D_Down:
-		if requestsBelow(e) {
-			return DirnBehaviourPair{D_Down, EB_Moving}
-		} else if requestsHere(e) {
-			return DirnBehaviourPair{D_Up, EB_DoorOpen}
-		} else if requestsAbove(e) {
-			return DirnBehaviourPair{D_Up, EB_Moving}
+	case elevio.MD_Down:
+		if requests_below(e) {
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_Moving}
+		} else if requests_here(e) {
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_DoorOpen}
+		} else if requests_above(e) {
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_Moving}
 		} else {
-			return DirnBehaviourPair{D_Stop, EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 		}
 
-	case D_Stop:
+	case elevio.MD_Stop:
 		// Stop case: Arbitrary check for up or down first
-		if e.requestsHere() {
-			return DirnBehaviourPair{D_Stop, EB_DoorOpen}
-		} else if e.requestsAbove() {
-			return DirnBehaviourPair{D_Up, EB_Moving}
-		} else if e.requestsBelow() {
-			return DirnBehaviourPair{D_Down, EB_Moving}
+		if requests_here(e) {
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_DoorOpen}
+		} else if requests_above(e) {
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_Moving}
+		} else if requests_below(e) {
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_Moving}
 		} else {
-			return DirnBehaviourPair{D_Stop, EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 		}
 
 	default:
-		return DirnBehaviourPair{D_Stop, EB_Idle}
+		return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 	}
 }
 
 
-func requests_shouldStop(e Elevator) bool {
-	switch e.dirn {
-	case D_Down:
-		return e.requests[e.floor][B_HallDown] ||
-			e.requests[e.floor][B_Cab] ||
-			!e.requestsBelow()
+func Requests_shouldStop(e *Elevator) bool {
+	switch e.Dirn {
+	case elevio.MD_Down:
+        fmt.Printf("check1før")
+        if (e.Requests[e.Floor][elevio.BT_HallDown]) ||
+        (e.Requests[e.Floor][elevio.BT_Cab]) ||
+        !requests_below(e) {
+            fmt.Printf("check1")
+        }
+		return (e.Requests[e.Floor][elevio.BT_HallDown]) ||
+			(e.Requests[e.Floor][elevio.BT_Cab]) ||
+			!requests_below(e)
+	case elevio.MD_Up:
+        fmt.Printf("check2før")
+        if (e.Requests[e.Floor][elevio.BT_HallUp]) ||
+        (e.Requests[e.Floor][elevio.BT_Cab]) ||
+        !requests_above(e) {
+            fmt.Printf("check2")
+        }
+		return (e.Requests[e.Floor][elevio.BT_HallUp]) ||
+			(e.Requests[e.Floor][elevio.BT_Cab]) ||
+			!requests_above(e)
 
-	case D_Up:
-		return e.requests[e.floor][B_HallUp] ||
-			e.requests[e.floor][B_Cab] ||
-			!e.requestsAbove()
-
-	case D_Stop:
+	case elevio.MD_Stop:
+        fmt.Printf("check3")
 		fallthrough 
 
 	default:
+        fmt.Printf("check4")
 		return true
 	}
 }
 
-func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button) bool {
-    switch e.config.clearRequestVariant {
-    case CV_All:
-        return e.floor == btnFloor
+func Requests_shouldClearImmediately(e *Elevator, btn_floor int, btn_type Button) bool {
+    switch e.Config.ClearRequestVariant {
+    case elevator.CV_All:
+        return e.Floor == btn_floor
 
-    case CV_InDirn:
-        return e.floor == btnFloor &&
-            (e.dirn == D_Up && btnType == B_HallUp ||
-                e.dirn == D_Down && btnType == B_HallDown ||
-                e.dirn == D_Stop ||
-                btnType == B_Cab)
+    case elevator.CV_InDirn:
+        return e.Floor == btn_floor &&
+            (e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp ||
+                e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown ||
+                e.Dirn == elevio.MD_Stop ||
+                btn_type == elevio.BT_Cab)
 
     default:
         return false
     }
 }
 
-func clearRequestsAtCurrentFloor(e Elevator) Elevator{
-    switch e.config.clearRequestVariant {
-    case CV_All:
-        for btn := 0; btn < N_BUTTONS; btn++ {
-            e.requests[e.floor][btn] = 0
+func ClearRequestsAtCurrentFloor(e *Elevator) *Elevator{
+    switch e.Config.ClearRequestVariant {
+    case elevator.CV_All:
+        for btn := 0; btn < elevio.N_BUTTONS; btn++ {
+            e.Requests[e.Floor][btn] = false
         }
 
-    case CV_InDirn:
-        e.requests[e.floor][B_Cab] = 0
+    case elevator.CV_InDirn:
+        e.Requests[e.Floor][elevio.BT_Cab] = false
 
-        switch e.dirn {
-        case D_Up:
-            if !requestsAbove(e) && e.requests[e.floor][B_HallUp] == 0 {
-                e.requests[e.floor][B_HallDown] = 0
+        switch e.Dirn {
+        case elevio.MD_Up:
+            if !requests_above(e) && e.Requests[e.Floor][elevio.BT_HallUp] == false {
+                e.Requests[e.Floor][elevio.BT_HallDown] = false
             }
-            e.requests[e.floor][B_HallUp] = 0
+            e.Requests[e.Floor][elevio.BT_HallUp] = false
 
-        case D_Down:
-            if !requestsBelow(e) && e.requests[e.floor][B_HallDown] == 0 {
-                e.requests[e.floor][B_HallUp] = 0
+        case elevio.MD_Down:
+            if !requests_below(e) && e.Requests[e.Floor][elevio.BT_HallDown] == false {
+                e.Requests[e.Floor][elevio.BT_HallUp] = false
             }
-            e.requests[e.floor][B_HallDown] = 0
+            e.Requests[e.Floor][elevio.BT_HallDown] = false
 
-        case D_Stop:
+        case elevio.MD_Stop:
         default:
-            e.requests[e.floor][B_HallUp] = 0
-            e.requests[e.floor][B_HallDown] = 0
+            e.Requests[e.Floor][elevio.BT_HallUp] = false
+            e.Requests[e.Floor][elevio.BT_HallDown] = false
         }
     }
     return e

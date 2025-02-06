@@ -1,66 +1,67 @@
 package elevator
 
-import "fmt"
-import "elevio"
+import "Driver-go/modules/elevio"
+
 type ElevatorBehaviour int
 
 const (
-    EB_Idle ElevatorBehaviour = iota
-    EB_DoorOpen
-    EB_Moving
+	EB_Idle ElevatorBehaviour = iota
+	EB_DoorOpen
+	EB_Moving
 )
 
 type ClearRequestVariant int
 
 const (
-    CV_All ClearRequestVariant = iota
-    CV_InDirn
+	CV_All ClearRequestVariant = iota
+	CV_InDirn
 )
 
-// Assume everyone waiting for the elevator gets on the elevator, even if 
+// Assume everyone waiting for the elevator gets on the elevator, even if
 // they will be traveling in the "wrong" direction for a while
-// Assume that only those that want to travel in the current direction 
+// Assume that only those that want to travel in the current direction
 // enter the elevator, and keep waiting outside otherwise
 
 type Elevator struct {
-    floor int
-    dirn Dirn
-    request [N_FLOORS][N_BUTTONS] int 
-    behaviour ElevatorBehaviour
-    config Config
+	Floor int
+	Dirn  elevio.MotorDirection
+	//Requests [elevio.N_FLOORS][elevio.N_BUTTONS]int
+	Requests  [4][3]bool
+	Behaviour ElevatorBehaviour
+	Config    Config
 }
- type Config struct {
-    clearRequestVariant ClearRequestVariant
-    doorOpenDuration_s double
-}
-
-func elevator_print(es Elevator) void {
-
+type Config struct {
+	ClearRequestVariant ClearRequestVariant
+	DoorOpenDuration_s  float64
 }
 
-func eb_toString (eb ElevatorBehaviour) *char {
-    switch eb {
-    case EB_idle:
-        return "EB_Idle"
-    case EB_DoorOpen:
-        return "EB_DoorOpen"
-    case EB_Moving:
-        return "EB_Moving"
-    default:
-        "EB_UNDEFINED"
-    }
+/* func elevator_print(es Elevator) void {
+
+} */
+
+func eb_toString(eb ElevatorBehaviour) string {
+	switch eb {
+	case EB_Idle:
+		return "EB_Idle"
+	case EB_DoorOpen:
+		return "EB_DoorOpen"
+	case EB_Moving:
+		return "EB_Moving"
+	default:
+		return "EB_UNDEFINED"
+	}
 }
 
-
-func elevatorPrint(es Elevator) void {
+/*
+func elevatorPrint(es Elevator) {
     fmt.Println("  +--------------------+")
     fmt.Printf(
         "  |floor = %-2d          |\n"+
             "  |dirn  = %-12s|\n"+
             "  |behav = %-12s|\n",
-        es.floor,
-        elevio_dirn_toString(es.dirn),
-        eb_toString(es.behaviour)
+        es.Floor,
+        elevio_dirn_toString(es.Dirn),
+        eb_toString(es.Behaviour),
     )
     fmt.Println("  +--------------------+")
     fmt.Println("  |  | up  | dn  | cab |")
@@ -81,10 +82,10 @@ func elevatorPrint(es Elevator) void {
         fmt.Println("|")
     }
     fmt.Println("  +--------------------+")
-}
-func elevator_uninitialized(void) *Elevator{
-    conf := config{clearRequestVariant : CV_All, doorOpenDuration_s: 3}
-    p := Elevator{floor: -1, dirn: D_Stop, behaviour : EB_Idle, config: conf}
-    return &p
-}
+} */
 
+func Elevator_uninitialized() *Elevator {
+	conf := Config{ClearRequestVariant: CV_All, DoorOpenDuration_s: 3}
+	p := Elevator{Floor: 0, Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf}
+	return &p
+}
