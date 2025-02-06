@@ -10,6 +10,7 @@ const (
 	EB_Moving
 )
 
+var ObstructionActive bool
 type ClearRequestVariant int
 
 const (
@@ -86,6 +87,16 @@ func elevatorPrint(es Elevator) {
 
 func Elevator_uninitialized() *Elevator {
 	conf := Config{ClearRequestVariant: CV_All, DoorOpenDuration_s: 3}
-	p := Elevator{Floor: 0, Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf}
+	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf}
+	if p.Floor == -1 {
+		elevio.SetMotorDirection(elevio.MD_Up)
+		for {
+			p.Floor = elevio.GetFloor()
+			if p.Floor != -1 {
+				elevio.SetMotorDirection(elevio.MD_Stop)
+				break
+			}
+		}
+	}
 	return &p
 }

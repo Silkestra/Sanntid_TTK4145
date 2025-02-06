@@ -9,13 +9,11 @@ import (
 )
 type Elevator = elevator.Elevator
 func main() {
-	var elev = elevator.Elevator_uninitialized()
-
 	numFloors := 4
 
 	elevio.Init("localhost:15657", numFloors)
-
-	var d elevio.MotorDirection = elevio.MD_Up
+	var elev = elevator.Elevator_uninitialized()
+	//var d elevio.MotorDirection = elevio.MD_Up
 	//elevio.SetMotorDirection(d)
 
 	drv_buttons := make(chan elevio.ButtonEvent)
@@ -44,24 +42,25 @@ func main() {
 
 		case a := <-drv_obstr:
 			fmt.Printf("%+v\n", a)
-			if a {
-				elevio.SetMotorDirection(elevio.MD_Stop)
-			} else {
-				elevio.SetMotorDirection(d)
+			if elev.Behaviour == elevator.EB_DoorOpen{
+				elevator.ObstructionActive = a
+				fmt.Println("obs:-", elevator.ObstructionActive)
 			}
+			if !a {
+				timer.TimerStart(elev.Config.DoorOpenDuration_s)
+			}
+			fmt.Println("obs:-", elevator.ObstructionActive)
 
 		case a := <-drv_stop:
-			fmt.Printf("%+v\n", a)
-			for f := 0; f < numFloors; f++ {
-				for b := elevio.ButtonType(0); b < 3; b++ {
-					elevio.SetButtonLamp(b, f, false)
-				}
-			}
+			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh","%+v\n", a)
+			close(drv_buttons)
+
 		
 		case a := <-drv_timeout:
-			fmt.Printf("%+v\n", a)
-			fsm.FsmOnDoorTimeout(elev)
+			if !elevator.ObstructionActive { //Ignore timeout if obstruction is active
+				fmt.Printf("%+v\n", a)
+				fsm.FsmOnDoorTimeout(elev)
+				}
 		}
-	fmt.Println("behvaiour", elev.Behaviour)
 	}
 }

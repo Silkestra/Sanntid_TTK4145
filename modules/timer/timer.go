@@ -1,7 +1,9 @@
 package timer
 
 import (
+
 	"time"
+	"Driver-go/modules/elevator"
 )
 const _pollRate = 20 * time.Millisecond
 
@@ -13,7 +15,7 @@ var (
 
 // Start the timer with a given duration in seconds
 func TimerStart(duration float64) {
-	timerEndTime = time.Now().Add(time.Duration(duration * float64(time.Second))) // Convert duration to time.Duration
+	timerEndTime = time.Now().Add(time.Duration(duration) * time.Second)
 	timerActive = true
 }
 
@@ -24,6 +26,7 @@ func TimerStop() {
 
 // Check if the timer has timed out
 func TimerTimedOut() bool {
+	//fmt.Println(timerActive, time.Now().After(timerEndTime))
 	return timerActive && time.Now().After(timerEndTime)
 }
 
@@ -32,32 +35,13 @@ func PollTimeout(receiver chan<- bool) {
 	for {
 		time.Sleep(_pollRate)
 		v := TimerTimedOut()
-		TimerStop()
-		if v != prev {
+		if v != prev && !elevator.ObstructionActive {
+			TimerStop()
 			receiver <- v
 		}
-		prev = v
+	prev = v
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // package timer
