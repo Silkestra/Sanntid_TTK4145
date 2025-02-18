@@ -27,7 +27,7 @@ func TimerStop() {
 // Check if the timer has timed out
 func TimerTimedOut() bool {
 	//fmt.Println(timerActive, time.Now().After(timerEndTime))
-	return timerActive && time.Now().After(timerEndTime)
+	return timerActive && time.Now().After(timerEndTime) && !elevator.ObstructionActive
 }
 
 func PollTimeout(receiver chan<- bool) {
@@ -35,7 +35,7 @@ func PollTimeout(receiver chan<- bool) {
 	for {
 		time.Sleep(_pollRate)
 		v := TimerTimedOut()
-		if v != prev && !elevator.ObstructionActive {
+		if v != prev{
 			TimerStop()
 			receiver <- v
 		}
