@@ -1,59 +1,66 @@
 package main
 
-import "Driver-go/elevio"
-import "fmt"
+import (
+	"Driver-go/modules/elevator"
+	"Driver-go/modules/elevio"
+	"Driver-go/modules/fsm"
+	"Driver-go/modules/timer"
+	"fmt"
+)
+type Elevator = elevator.Elevator
+func main() {
+	numFloors := 4
 
-func main(){
+	elevio.Init("localhost:15657", numFloors)
+	var elev = elevator.Elevator_uninitialized()
+	//var d elevio.MotorDirection = elevio.MD_Up
+	//elevio.SetMotorDirection(d)
 
-    numFloors := 4
+	drv_buttons := make(chan elevio.ButtonEvent)
+	drv_floors := make(chan int)
+	drv_obstr := make(chan bool)
+	drv_stop := make(chan bool)
+	drv_timeout := make(chan bool)
 
-    elevio.Init("localhost:15657", numFloors)
-    
-    var d elevio.MotorDirection = elevio.MD_Up
-    //elevio.SetMotorDirection(d)
-    
-    drv_buttons := make(chan elevio.ButtonEvent)
-    drv_floors  := make(chan int)
-    drv_obstr   := make(chan bool)
-    drv_stop    := make(chan bool)    
-    
-    go elevio.PollButtons(drv_buttons)
-    go elevio.PollFloorSensor(drv_floors)
-    go elevio.PollObstructionSwitch(drv_obstr)
-    go elevio.PollStopButton(drv_stop)
-    
-    
-    for {
-        select {
-        case a := <- drv_buttons:
-            fmt.Printf("%+v\n", a)
-            elevio.SetButtonLamp(a.Button, a.Floor, true)
-            
-        case a := <- drv_floors:
-            fmt.Printf("%+v\n", a)
-            if a == numFloors-1 {
-                d = elevio.MD_Down
-            } else if a == 0 {
-                d = elevio.MD_Up
-            }
-            elevio.SetMotorDirection(d)
-            
-            
-        case a := <- drv_obstr:
-            fmt.Printf("%+v\n", a)
-            if a {
-                elevio.SetMotorDirection(elevio.MD_Stop)
-            } else {
-                elevio.SetMotorDirection(d)
-            }
-            
-        case a := <- drv_stop:
-            fmt.Printf("%+v\n", a)
-            for f := 0; f < numFloors; f++ {
-                for b := elevio.ButtonType(0); b < 3; b++ {
-                    elevio.SetButtonLamp(b, f, false)
-                }
-            }
-        }
-    }    
+	go elevio.PollButtons(drv_buttons)
+	go elevio.PollFloorSensor(drv_floors)
+	go elevio.PollObstructionSwitch(drv_obstr)
+	go elevio.PollStopButton(drv_stop)
+	go timer.PollTimeout(drv_timeout)
+	
+	for {
+		select {
+		case a := <-drv_buttons:
+			fmt.Printf("%+v\n", a)
+			//elevio.SetButtonLamp(a.Button, a.Floor, true)
+			fsm.FsmOnRequestButtonPress(a.Floor, a.Button, elev)
+			fmt.Printf("%+v\n", a)
+
+		case a := <-drv_floors:
+			fmt.Printf("check5")
+			fsm.FsmOnFloorArrival(a, elev)
+
+		case a := <-drv_obstr:
+			fmt.Printf("%+v\n", a)
+			if elev.Behaviour == elevator.EB_DoorOpen{
+				elevator.ObstructionActive = a
+				fmt.Println("obs:-", elevator.ObstructionActive)
+			}
+			if !a {
+				timer.TimerStart(elev.Config.DoorOpenDuration_s)
+			}
+			fmt.Println("obs:-", elevator.ObstructionActive)
+
+		case a := <-drv_stop:
+			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh","%+v\n", a)
+			close(drv_buttons)
+
+		
+		case a := <-drv_timeout:
+			if !elevator.ObstructionActive { //Ignore timeout if obstruction is active
+				fmt.Printf("%+v\n", a)
+				fsm.FsmOnDoorTimeout(elev)
+				}
+		}
+	}
 }
