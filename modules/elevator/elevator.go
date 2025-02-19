@@ -6,8 +6,9 @@ type ElevatorBehaviour int
 
 const (
 	EB_Idle ElevatorBehaviour = iota
-	EB_DoorOpen
+	EB_DoorOpen 
 	EB_Moving
+	EB_Disconnected
 )
 
 var ObstructionActive bool
@@ -43,13 +44,28 @@ type Config struct {
 func eb_toString(eb ElevatorBehaviour) string {
 	switch eb {
 	case EB_Idle:
-		return "EB_Idle"
+		return "idle"
 	case EB_DoorOpen:
-		return "EB_DoorOpen"
+		return "doorOpen"
 	case EB_Moving:
-		return "EB_Moving"
+		return "moving"
+	case EB_Disconnected:
+		return "disconnected"
 	default:
-		return "EB_UNDEFINED"
+		return "disconnected"
+	}
+}
+
+func direction_toString(dirn elevio.MotorDirection) string {
+	switch dirn {
+	case elevio.MD_Up:
+		return "up"
+	case elevio.MD_Down:
+		return "down"
+	case elevio.MD_Stop:
+		return "stop"
+	default:
+		return "disconnected"
 	}
 }
 
