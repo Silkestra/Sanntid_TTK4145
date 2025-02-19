@@ -6,12 +6,13 @@ type ElevatorBehaviour int
 
 const (
 	EB_Idle ElevatorBehaviour = iota
-	EB_DoorOpen 
+	EB_DoorOpen
 	EB_Moving
 	EB_Disconnected
 )
 
 var ObstructionActive bool
+
 type ClearRequestVariant int
 
 const (
@@ -37,11 +38,7 @@ type Config struct {
 	DoorOpenDuration_s  float64
 }
 
-/* func elevator_print(es Elevator) void {
-
-} */
-
-func eb_toString(eb ElevatorBehaviour) string {
+func Eb_toString(eb ElevatorBehaviour) string {
 	switch eb {
 	case EB_Idle:
 		return "idle"
@@ -56,7 +53,7 @@ func eb_toString(eb ElevatorBehaviour) string {
 	}
 }
 
-func direction_toString(dirn elevio.MotorDirection) string {
+func Direction_toString(dirn elevio.MotorDirection) string {
 	switch dirn {
 	case elevio.MD_Up:
 		return "up"

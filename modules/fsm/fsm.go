@@ -49,8 +49,10 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 			elev.Requests[btnFloor][btnType] = true
 		}
 	case elevator.EB_Moving:
+
 		elev.Requests[btnFloor][btnType] = true
 	case elevator.EB_Idle:
+
 		elev.Requests[btnFloor][btnType] = true
 		output := cabrequests.Requests_chooseDirection(elev)
 		elev.Dirn = output.Dirn 
