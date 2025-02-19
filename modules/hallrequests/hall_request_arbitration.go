@@ -5,8 +5,8 @@ import "os/exec"
 import "fmt"
 import "encoding/json"
 import "runtime"
-import "Driver-go/modules/elevator"
-
+import "elevator"
+import "strconv"
 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
@@ -27,13 +27,12 @@ type HRAInput struct {
 
 
 
-
-func FillElevState(elev *Elevator) HRAElevState {
+func FillElevState(elev Elevator) HRAElevState {
     switch elev.Behaviour{
-        case EB_Idle, EB_Moving, EB_DoorOpen: 
+        case elevator.EB_Idle, elevator.EB_Moving, elevator.EB_DoorOpen: 
             var elev_cab []bool
             for i := 0; i < 4; i++ {
-                elev_cab = append(elev_cab, Requests[i][2])
+                elev_cab = append(elev_cab, elev.Requests[i][2])
             }
             return HRAElevState{
                 Behavior:       elevator.eb_toString(elev.Behaviour),
@@ -42,11 +41,25 @@ func FillElevState(elev *Elevator) HRAElevState {
                 CabRequests:    elev_cab,
             }
 
-        case EB_Disconnecteed: 
+        case elevator.EB_Disconnected: 
+            return HRAElevState{}
+        default:
             return HRAElevState{}
         }
+}
+
+func FillInput(world Worldview) HRAInput{
+    states := make(map[string]HRAElevState)
+    for i, elev := range world.elevators {
+        elev_state := FillElevState(elev)
+        states[strconv.Itoa(i)] = elev_state
     }
 
+    return HRAInput{
+        HallRequests: world.hallRequests_list,
+        States: states,
+    }
+}
 
 func main(){
 

@@ -26,6 +26,7 @@ type HRAInput struct {
 }
 
 
+
 func FillElevState(elev Elevator) HRAElevState {
     switch elev.Behaviour{
         case elevator.EB_Idle, elevator.EB_Moving, elevator.EB_DoorOpen: 
