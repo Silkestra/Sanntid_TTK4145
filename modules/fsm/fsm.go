@@ -6,6 +6,7 @@ import (
 	"Driver-go/modules/elevio"
 	"Driver-go/modules/timer"
 	"fmt"
+	"Driver-go/modules/network/bcast"
 
 )
 
@@ -46,14 +47,18 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 		if cabrequests.Requests_shouldClearImmediately(elev, btnFloor, btnType) {
 			timer.TimerStart(elev.Config.DoorOpenDuration_s)
 		} else {
+			//her
 			elev.Requests[btnFloor][btnType] = true
+
 		}
 	case elevator.EB_Moving:
-
+		//her
 		elev.Requests[btnFloor][btnType] = true
+
 	case elevator.EB_Idle:
-
+		//her
 		elev.Requests[btnFloor][btnType] = true
+
 		output := cabrequests.Requests_chooseDirection(elev)
 		elev.Dirn = output.Dirn 
 		elev.Behaviour = output.Behaviour
