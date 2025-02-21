@@ -30,12 +30,17 @@ type Elevator struct {
 	Dirn  elevio.MotorDirection
 	//Requests [elevio.N_FLOORS][elevio.N_BUTTONS]int
 	Requests  [4][3]bool
+	Orderbook [4][2]int
 	Behaviour ElevatorBehaviour
 	Config    Config
 }
 type Config struct {
 	ClearRequestVariant ClearRequestVariant
 	DoorOpenDuration_s  float64
+}
+
+type Worldview struct{
+	elevators [n]Elevator
 }
 
 func Eb_toString(eb ElevatorBehaviour) string {

@@ -15,8 +15,6 @@ type ElevatorConfig = elevator.Config
 type ButtonType = elevio.ButtonType
 type ElevatorBehaviour = elevator.ElevatorBehaviour
 
-
-
 // func init() {
 // 	elev = Elevator{
 // 		Floor:     -1,
