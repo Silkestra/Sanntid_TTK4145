@@ -45,33 +45,30 @@ func FillElevState(elev Elevator) HRAElevState {
 	}
 }
 
-
 func isEmptyElevState(state HRAElevState) bool {
-    return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
+	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
 
-
-func FillInput(world elevator.Worldview) HRAInput {
+func FillInput(world Elevator.Worldview) HRAInput {
 	states := make(map[string]HRAElevState)
 	for i, elev := range world.elevators {
 		elev_state := FillElevState(elev)
-		if !isEmptyElevState(elev_state){
+		if !isEmptyElevState(elev_state) {
 			states[strconv.Itoa(i)] = elev_state
 		}
 	}
 
 	return HRAInput{
-		HallRequests: world.hallRequests_list, //fetch from orderBook, fetch all U and B 
+		HallRequests: world.hallRequests_list, //fetch from orderBook, fetch all U and B
 		States:       states,
 	}
 }
 
-
-func main() {
+func hallarbitrate(world elevator.Worldview) {
 
 	hraExecutable := ""
 	switch runtime.GOOS {
-	case "linux":
+	case "darwin":
 		hraExecutable = "hall_request_assigner"
 	case "windows":
 		hraExecutable = "hall_request_assigner.exe"
