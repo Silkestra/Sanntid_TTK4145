@@ -12,6 +12,7 @@ import (
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
 type Elevator = elevator.Elevator
+type Worldview = elevator.Worldview
 
 type HRAElevState struct {
 	Behavior    string `json:"behaviour"`
@@ -45,30 +46,33 @@ func FillElevState(elev Elevator) HRAElevState {
 	}
 }
 
+
 func isEmptyElevState(state HRAElevState) bool {
-	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
+    return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
 
-func FillInput(world Elevator.Worldview) HRAInput {
+
+func FillInput(world Worldview) HRAInput {
 	states := make(map[string]HRAElevState)
-	for i, elev := range world.elevators {
+	for i, elev := range world.Elevators {
 		elev_state := FillElevState(elev)
-		if !isEmptyElevState(elev_state) {
+		if !isEmptyElevState(elev_state){
 			states[strconv.Itoa(i)] = elev_state
 		}
 	}
 
 	return HRAInput{
-		HallRequests: world.hallRequests_list, //fetch from orderBook, fetch all U and B
+		HallRequests: world.hallRequests_list, //fetch from orderBook, fetch all U and B 
 		States:       states,
 	}
 }
 
-func hallarbitrate(world elevator.Worldview) {
+
+func main() {
 
 	hraExecutable := ""
 	switch runtime.GOOS {
-	case "darwin":
+	case "linux":
 		hraExecutable = "hall_request_assigner"
 	case "windows":
 		hraExecutable = "hall_request_assigner.exe"

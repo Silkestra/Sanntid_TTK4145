@@ -40,7 +40,7 @@ type Config struct {
 }
 
 type Worldview struct{
-	elevators [n]Elevator
+	Elevators [4]Elevator
 }
 
 func Eb_toString(eb ElevatorBehaviour) string {
