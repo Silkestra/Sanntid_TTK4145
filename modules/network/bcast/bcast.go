@@ -6,9 +6,17 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"time"
 )
 
 const bufSize = 1024
+
+
+type PeerUpdate struct {
+	Peers []string
+	New   string
+	Lost  []string
+}
 
 // Encodes received values from `chans` into type-tagged JSON, then broadcasts
 // it on `port`
@@ -143,5 +151,4 @@ func checkTypeRecursive(val reflect.Type, offsets []int){
 			checkTypeRecursive(val.Field(idx).Type, append(offsets, idx+1))
 		}
 	}
-}
-
+} 
