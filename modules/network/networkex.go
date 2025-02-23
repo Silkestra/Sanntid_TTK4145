@@ -62,14 +62,17 @@ func RunNetwork() {
 
 	// The example message. We just send one of these every second.
 
-	elev1 := elevator.Elevator_uninitialized()
-	elev1.ID = 1
-	elev2 := elevator.Elevator_uninitialized()
-	elev2.ID = 2
-	elev3 := elevator.Elevator_uninitialized()
-	elev3.ID = 3
+	elev1 := elevator.Elevator{
+		ID: 1,
+	}
+	elev2 := elevator.Elevator{
+		ID: 2,
+	}
+	elev3 := elevator.Elevator{
+		ID: 3,
+	}
 	world := elevator.Worldview{
-		Elevators: [3]Elevator{*elev1, *elev2, *elev3},
+		Elevators: [3]Elevator{elev1, elev2, elev3},
 	}
 
 	go func() {

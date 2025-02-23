@@ -2,7 +2,7 @@ package main
 
 import (
 	"Driver-go/modules/elevator"
-	"Driver-go/modules/elevio"
+	//"Driver-go/modules/elevio"
 	//"Driver-go/modules/fsm"
 	//"Driver-go/modules/timer"
 	//"fmt"
@@ -11,9 +11,9 @@ import (
 )
 type Elevator = elevator.Elevator
 func main() {
-	numFloors := 4
+	//numFloors := 4
 
-	elevio.Init("localhost:15657", numFloors)
+	//elevio.Init("localhost:15657", numFloors)
 	network.RunNetwork()
 
 	/* var elev = elevator.Elevator_uninitialized()
