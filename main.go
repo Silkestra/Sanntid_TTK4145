@@ -3,16 +3,20 @@ package main
 import (
 	"Driver-go/modules/elevator"
 	"Driver-go/modules/elevio"
-	"Driver-go/modules/fsm"
-	"Driver-go/modules/timer"
-	"fmt"
+	//"Driver-go/modules/fsm"
+	//"Driver-go/modules/timer"
+	//"fmt"
+	//"Driver-go/modules/hallrequests"
+	"Driver-go/modules/network"
 )
 type Elevator = elevator.Elevator
 func main() {
 	numFloors := 4
 
 	elevio.Init("localhost:15657", numFloors)
-	var elev = elevator.Elevator_uninitialized()
+	network.RunNetwork()
+
+	/* var elev = elevator.Elevator_uninitialized()
 	//var d elevio.MotorDirection = elevio.MD_Up
 	//elevio.SetMotorDirection(d)
 
@@ -33,6 +37,8 @@ func main() {
 		case a := <-drv_buttons:
 			fmt.Printf("%+v\n", a)
 			//elevio.SetButtonLamp(a.Button, a.Floor, true)
+			
+			hallrequests.FillElevRequest(hallrequests.HallAssigner(world, elev), elev)
 			fsm.FsmOnRequestButtonPress(a.Floor, a.Button, elev)
 			fmt.Printf("%+v\n", a)
 
@@ -62,5 +68,5 @@ func main() {
 				fsm.FsmOnDoorTimeout(elev)
 				}
 		}
-	}
+	} */
 }

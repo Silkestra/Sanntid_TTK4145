@@ -1,6 +1,7 @@
-package main
+package network
 
 import (
+	"Driver-go/modules/elevator"
 	"Driver-go/modules/network/bcast"
 	"Driver-go/modules/network/localip"
 	"Driver-go/modules/network/peers"
@@ -12,13 +13,17 @@ import (
 
 // We define some custom struct to send over the network.
 // Note that all members we want to transmit must be public. Any private members
-//  will be received as zero-values.
+//
+
+type Elevator = elevator.Elevator
+
+// will be received as zero-values.
 type HelloMsg struct {
 	Message string
 	Iter    int
 }
 
-func main() {
+func RunNetwork() {
 	// Our id can be anything. Here we pass it on the command line, using
 	//  `go run main.go -id=our_id`
 	var id string
@@ -47,8 +52,8 @@ func main() {
 	go peers.Receiver(15647, peerUpdateCh)
 
 	// We make channels for sending and receiving our custom data types
-	helloTx := make(chan HelloMsg)
-	helloRx := make(chan HelloMsg)
+	helloTx := make(chan elevator.Worldview)
+	helloRx := make(chan elevator.Worldview)
 	// ... and start the transmitter/receiver pair on some port
 	// These functions can take any number of channels! It is also possible to
 	//  start multiple transmitters/receivers on the same port.
@@ -56,12 +61,21 @@ func main() {
 	go bcast.Receiver(16569, helloRx)
 
 	// The example message. We just send one of these every second.
+
+	elev1 := elevator.Elevator_uninitialized()
+	elev1.ID = 1
+	elev2 := elevator.Elevator_uninitialized()
+	elev2.ID = 2
+	elev3 := elevator.Elevator_uninitialized()
+	elev3.ID = 3
+	world := elevator.Worldview{
+		Elevators: [3]Elevator{*elev1, *elev2, *elev3},
+	}
+
 	go func() {
-		helloMsg := HelloMsg{"Hello from " + id, 0}
 		for {
-			helloMsg.Iter++
-			helloTx <- helloMsg
-			time.Sleep(1 * time.Second)
+			helloTx <- world
+			time.Sleep(2 * time.Second)
 		}
 	}()
 

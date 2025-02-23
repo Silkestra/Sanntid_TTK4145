@@ -42,6 +42,7 @@ type Elevator struct {
 	OrderBook [4][2]HallRequestStates
 	Behaviour ElevatorBehaviour
 	Config    Config
+	ID	int 
 }
 type Config struct {
 	ClearRequestVariant ClearRequestVariant
@@ -128,7 +129,7 @@ func elevatorPrint(es Elevator) {
 } */
 
 func Elevator_uninitialized() *Elevator {
-	conf := Config{ClearRequestVariant: CV_All, DoorOpenDuration_s: 3}
+	conf := Config{ClearRequestVariant: CV_InDirn, DoorOpenDuration_s: 3}
 	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf}
 	if p.Floor == -1 {
 		elevio.SetMotorDirection(elevio.MD_Up)
@@ -142,3 +143,4 @@ func Elevator_uninitialized() *Elevator {
 	}
 	return &p
 }
+

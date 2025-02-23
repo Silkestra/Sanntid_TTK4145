@@ -1,4 +1,4 @@
-package main
+package hallrequests
 
 import (
 	"Driver-go/modules/elevator"
@@ -46,29 +46,26 @@ func FillElevState(elev Elevator) HRAElevState {
 	}
 }
 
- 
 func isEmptyElevState(state HRAElevState) bool {
-    return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
+	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
-
 
 func FillInput(world Worldview, elev *Elevator) HRAInput {
 	states := make(map[string]HRAElevState)
-	for i, elev := range world.Elevators {
+	for _, elev := range world.Elevators {
 		elev_state := FillElevState(elev)
-		if !isEmptyElevState(elev_state){
-			states[strconv.Itoa(i)] = elev_state
+		if !isEmptyElevState(elev_state) {
+			states[strconv.Itoa(elev.ID)] = elev_state
 		}
 	}
 
 	return HRAInput{
-		HallRequests: elevator.MakeHallRequests(elev), //fetch from orderBook, fetch all U and B 
+		HallRequests: elevator.MakeHallRequests(elev), //fetch from orderBook, fetch all U and B
 		States:       states,
 	}
 }
 
-
-func HallAssigner(world Worldview, elev *Elevator){
+func HallAssigner(world Worldview, elev *Elevator) map[string][][2]bool {
 
 	hraExecutable := ""
 	switch runtime.GOOS {
@@ -85,25 +82,36 @@ func HallAssigner(world Worldview, elev *Elevator){
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
 		fmt.Println("json.Marshal error: ", err)
-		return
+
 	}
 
 	ret, err := exec.Command("../hall_request_assigner/"+hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
 	if err != nil {
 		fmt.Println("exec.Command error: ", err)
 		fmt.Println(string(ret))
-		return
+
 	}
 
 	output := new(map[string][][2]bool)
 	err = json.Unmarshal(ret, &output)
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)
-		return
+
 	}
 
 	fmt.Printf("output: \n")
 	for k, v := range *output {
 		fmt.Printf("%6v :  %+v\n", k, v)
+	}
+
+	return *output
+
+}
+
+func FillElevRequest(hallmap map[string][][2]bool, elev *Elevator) {
+	orders := hallmap[strconv.Itoa(elev.ID)]
+	for i, ordersOnFloor := range orders {
+		elev.Requests[i][0] = ordersOnFloor[0]
+		elev.Requests[i][1] = ordersOnFloor[1]
 	}
 }
