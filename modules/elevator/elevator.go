@@ -20,6 +20,15 @@ const (
 	CV_InDirn
 )
 
+type HallRequestStates int
+
+const (
+	Uncomfirmed HallRequestStates = iota
+	Confirmed
+	Done
+	Unknown
+)
+
 // Assume everyone waiting for the elevator gets on the elevator, even if
 // they will be traveling in the "wrong" direction for a while
 // Assume that only those that want to travel in the current direction
@@ -30,7 +39,7 @@ type Elevator struct {
 	Dirn  elevio.MotorDirection
 	//Requests [elevio.N_FLOORS][elevio.N_BUTTONS]int
 	Requests  [4][3]bool
-	Orderbook [4][2]int
+	OrderBook [4][2]HallRequestStates
 	Behaviour ElevatorBehaviour
 	Config    Config
 }
@@ -39,8 +48,23 @@ type Config struct {
 	DoorOpenDuration_s  float64
 }
 
-type Worldview struct{
-	Elevators [4]Elevator
+type Worldview struct {
+	Elevators [3]Elevator
+}
+
+func MakeHallRequests(elev *Elevator) [][2]bool {
+	output := make([][2]bool, len(elev.OrderBook))
+
+	for i, row := range elev.OrderBook {
+		for j, val := range row {
+			if val == Uncomfirmed || val == Confirmed {
+				output[i][j] = true
+			} else {
+				output[i][j] = false
+			}
+		}
+	}
+	return output
 }
 
 func Eb_toString(eb ElevatorBehaviour) string {

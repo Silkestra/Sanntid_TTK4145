@@ -46,13 +46,13 @@ func FillElevState(elev Elevator) HRAElevState {
 	}
 }
 
-
+ 
 func isEmptyElevState(state HRAElevState) bool {
     return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
 
 
-func FillInput(world Worldview) HRAInput {
+func FillInput(world Worldview, elev *Elevator) HRAInput {
 	states := make(map[string]HRAElevState)
 	for i, elev := range world.Elevators {
 		elev_state := FillElevState(elev)
@@ -62,17 +62,17 @@ func FillInput(world Worldview) HRAInput {
 	}
 
 	return HRAInput{
-		HallRequests: world.hallRequests_list, //fetch from orderBook, fetch all U and B 
+		HallRequests: elevator.MakeHallRequests(elev), //fetch from orderBook, fetch all U and B 
 		States:       states,
 	}
 }
 
 
-func main() {
+func HallAssigner(world Worldview, elev *Elevator){
 
 	hraExecutable := ""
 	switch runtime.GOOS {
-	case "linux":
+	case "darwin":
 		hraExecutable = "hall_request_assigner"
 	case "windows":
 		hraExecutable = "hall_request_assigner.exe"
@@ -80,23 +80,7 @@ func main() {
 		panic("OS not supported")
 	}
 
-	input := HRAInput{
-		HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
-		States: map[string]HRAElevState{
-			"one": HRAElevState{
-				Behavior:    "moving",
-				Floor:       2,
-				Direction:   "up",
-				CabRequests: []bool{false, false, false, true},
-			},
-			"two": HRAElevState{
-				Behavior:    "idle",
-				Floor:       0,
-				Direction:   "stop",
-				CabRequests: []bool{false, false, false, false},
-			},
-		},
-	}
+	input := FillInput(world, elev)
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
