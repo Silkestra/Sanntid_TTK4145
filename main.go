@@ -8,11 +8,11 @@ import (
 	//"fmt"
 	//"Driver-go/modules/hallrequests"
 	"Driver-go/modules/network"
+
 )
 type Elevator = elevator.Elevator
 func main() {
 	//numFloors := 4
-
 	//elevio.Init("localhost:15657", numFloors)
 	network.RunNetwork()
 
@@ -31,6 +31,7 @@ func main() {
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 	go timer.PollTimeout(drv_timeout)
+
 	
 	for {
 		select {

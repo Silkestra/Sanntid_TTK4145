@@ -23,7 +23,7 @@ type HelloMsg struct {
 	Iter    int
 }
 
-func RunNetwork() {
+func RunNetwork() elevator.Worldview {
 	// Our id can be anything. Here we pass it on the command line, using
 	//  `go run main.go -id=our_id`
 	var id string
@@ -57,7 +57,7 @@ func RunNetwork() {
 	// ... and start the transmitter/receiver pair on some port
 	// These functions can take any number of channels! It is also possible to
 	//  start multiple transmitters/receivers on the same port.
-	go bcast.Transmitter(16569, id, helloTx)
+	go bcast.Transmitter(16569, helloTx)
 	go bcast.Receiver(16569, helloRx)
 
 	// The example message. We just send one of these every second.
@@ -78,7 +78,7 @@ func RunNetwork() {
 	go func() {
 		for {
 			helloTx <- world
-			time.Sleep(2 * time.Second)
+			time.Sleep(3 * time.Second)
 		}
 	}()
 
@@ -93,6 +93,7 @@ func RunNetwork() {
 
 		case a := <-helloRx:
 			fmt.Printf("Received: %#v\n", a)
+			return a
 		}
 	}
 }
