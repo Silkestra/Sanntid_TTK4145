@@ -18,12 +18,7 @@ import (
 type Elevator = elevator.Elevator
 
 // will be received as zero-values.
-type HelloMsg struct {
-	Message string
-	Iter    int
-}
-
-func RunNetwork() elevator.Worldview {
+/* func RunNetwork(){
 	// Our id can be anything. Here we pass it on the command line, using
 	//  `go run main.go -id=our_id`
 	var id string
@@ -62,18 +57,7 @@ func RunNetwork() elevator.Worldview {
 
 	// The example message. We just send one of these every second.
 
-	elev1 := elevator.Elevator{
-		ID: 1,
-	}
-	elev2 := elevator.Elevator{
-		ID: 2,
-	}
-	elev3 := elevator.Elevator{
-		ID: 3,
-	}
-	world := elevator.Worldview{
-		Elevators: [3]Elevator{elev1, elev2, elev3},
-	}
+
 
 	go func() {
 		for {
@@ -93,7 +77,7 @@ func RunNetwork() elevator.Worldview {
 
 		case a := <-helloRx:
 			fmt.Printf("Received: %#v\n", a)
-			return a
 		}
 	}
 }
+ */

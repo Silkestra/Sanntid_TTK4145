@@ -1,6 +1,10 @@
 package elevator
 
-import "Driver-go/modules/elevio"
+import (
+	"Driver-go/modules/elevio"
+	"fmt"
+	"strconv"
+)
 
 type ElevatorBehaviour int
 
@@ -42,8 +46,9 @@ type Elevator struct {
 	OrderBook [4][2]HallRequestStates
 	Behaviour ElevatorBehaviour
 	Config    Config
-	ID	int 
+	ID        int
 }
+
 type Config struct {
 	ClearRequestVariant ClearRequestVariant
 	DoorOpenDuration_s  float64
@@ -128,9 +133,13 @@ func elevatorPrint(es Elevator) {
     fmt.Println("  +--------------------+")
 } */
 
-func Elevator_uninitialized() *Elevator {
+func Elevator_uninitialized(id string) *Elevator {
 	conf := Config{ClearRequestVariant: CV_InDirn, DoorOpenDuration_s: 3}
-	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf}
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		fmt.Println("Error converting string to int:", err)
+	}
+	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf, ID: num}
 	if p.Floor == -1 {
 		elevio.SetMotorDirection(elevio.MD_Up)
 		for {
@@ -143,4 +152,3 @@ func Elevator_uninitialized() *Elevator {
 	}
 	return &p
 }
-
