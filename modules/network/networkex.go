@@ -2,13 +2,6 @@ package network
 
 import (
 	"Driver-go/modules/elevator"
-	"Driver-go/modules/network/bcast"
-	"Driver-go/modules/network/localip"
-	"Driver-go/modules/network/peers"
-	"flag"
-	"fmt"
-	"os"
-	"time"
 )
 
 // We define some custom struct to send over the network.
@@ -80,4 +73,4 @@ type Elevator = elevator.Elevator
 		}
 	}
 }
- */
+*/

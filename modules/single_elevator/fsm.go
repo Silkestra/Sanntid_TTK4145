@@ -1,4 +1,4 @@
-package fsm
+package single_elevator
 
 import (
 	"Driver-go/modules/cabrequests"
@@ -6,10 +6,8 @@ import (
 	"Driver-go/modules/elevio"
 	"Driver-go/modules/timer"
 	"fmt"
-
 )
 
-type Elevator = elevator.Elevator
 type ElevatorConfig = elevator.Config
 type ButtonType = elevio.ButtonType
 type ElevatorBehaviour = elevator.ElevatorBehaviour
@@ -20,19 +18,18 @@ type ElevatorBehaviour = elevator.ElevatorBehaviour
 // 		Dirn:      0,
 // 		Behaviour: 0,
 // 		Config: ElevatorConfig{
-	
+
 // 			DoorOpenDuration_s: float64(3 * time.Second) / float64(time.Second),
 // 		},
 // 	}
 // }
 
-
 func setAllLights(ev *Elevator) {
-    for floor := 0; floor < elevio.N_FLOORS; floor++ {
-        for btn := 0; btn < elevio.N_BUTTONS; btn++ {
-            elevio.SetButtonLamp(ButtonType(btn), floor, ev.Requests[floor][btn])
-        }
-    }
+	for floor := 0; floor < elevio.N_FLOORS; floor++ {
+		for btn := 0; btn < elevio.N_BUTTONS; btn++ {
+			elevio.SetButtonLamp(ButtonType(btn), floor, ev.Requests[floor][btn])
+		}
+	}
 }
 
 func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
@@ -57,7 +54,7 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 		elev.Requests[btnFloor][btnType] = true
 
 		output := cabrequests.Requests_chooseDirection(elev)
-		elev.Dirn = output.Dirn 
+		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour
 		fmt.Println("ouput", output.Behaviour)
 		switch elev.Behaviour {
@@ -103,7 +100,7 @@ func FsmOnDoorTimeout(elev *Elevator) {
 	//printElevator()
 	output := cabrequests.Requests_chooseDirection(elev)
 	fmt.Println("ouput", output)
-	elev.Dirn =  output.Dirn
+	elev.Dirn = output.Dirn
 	elev.Behaviour = output.Behaviour
 	switch elev.Behaviour {
 	case elevator.EB_DoorOpen:

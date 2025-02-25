@@ -1,4 +1,4 @@
-package elevio
+package single_elevator
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 const _pollRate = 20 * time.Millisecond
 const N_floor_const int = 4
 const N_buttons_const int = 3
+
 var _initialized bool = false
 var N_FLOORS int = N_floor_const //navn endret fra _numFloors
 var N_BUTTONS int = N_buttons_const

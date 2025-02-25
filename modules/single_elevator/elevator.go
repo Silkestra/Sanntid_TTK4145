@@ -1,10 +1,11 @@
-package elevator
+package single_elevator
 
 import (
-	"Driver-go/modules/elevio"
-	"fmt"
-	"strconv"
+	"Driver-go/modules/hallrequests"
 )
+
+// Defining elevator
+type HRAElevState = hallrequests.HRAElevState
 
 type ElevatorBehaviour int
 
@@ -24,53 +25,18 @@ const (
 	CV_InDirn
 )
 
-type HallRequestStates int
-
-const (
-	Uncomfirmed HallRequestStates = iota
-	Confirmed
-	Done
-	Unknown
-)
-
-// Assume everyone waiting for the elevator gets on the elevator, even if
-// they will be traveling in the "wrong" direction for a while
-// Assume that only those that want to travel in the current direction
-// enter the elevator, and keep waiting outside otherwise
-
 type Elevator struct {
 	Floor int
-	Dirn  elevio.MotorDirection
+	Dirn  MotorDirection
 	//Requests [elevio.N_FLOORS][elevio.N_BUTTONS]int
 	Requests  [4][3]bool
-	OrderBook [4][2]HallRequestStates
 	Behaviour ElevatorBehaviour
 	Config    Config
-	ID        int
 }
 
 type Config struct {
 	ClearRequestVariant ClearRequestVariant
 	DoorOpenDuration_s  float64
-}
-
-type Worldview struct {
-	Elevators [3]Elevator
-}
-
-func MakeHallRequests(elev *Elevator) [][2]bool {
-	output := make([][2]bool, len(elev.OrderBook))
-
-	for i, row := range elev.OrderBook {
-		for j, val := range row {
-			if val == Uncomfirmed || val == Confirmed {
-				output[i][j] = true
-			} else {
-				output[i][j] = false
-			}
-		}
-	}
-	return output
 }
 
 func Eb_toString(eb ElevatorBehaviour) string {
@@ -88,13 +54,13 @@ func Eb_toString(eb ElevatorBehaviour) string {
 	}
 }
 
-func Direction_toString(dirn elevio.MotorDirection) string {
+func Direction_toString(dirn MotorDirection) string {
 	switch dirn {
-	case elevio.MD_Up:
+	case MD_Up:
 		return "up"
-	case elevio.MD_Down:
+	case MD_Down:
 		return "down"
-	case elevio.MD_Stop:
+	case MD_Stop:
 		return "stop"
 	default:
 		return "disconnected"
@@ -133,22 +99,42 @@ func elevatorPrint(es Elevator) {
     fmt.Println("  +--------------------+")
 } */
 
-func Elevator_uninitialized(id string) *Elevator {
+func Elevator_uninitialized() *Elevator {
 	conf := Config{ClearRequestVariant: CV_InDirn, DoorOpenDuration_s: 3}
-	num, err := strconv.Atoi(id)
-	if err != nil {
-		fmt.Println("Error converting string to int:", err)
-	}
-	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf, ID: num}
+	p := Elevator{Floor: GetFloor(), Dirn: MD_Stop, Behaviour: EB_Idle, Config: conf}
 	if p.Floor == -1 {
-		elevio.SetMotorDirection(elevio.MD_Up)
+		SetMotorDirection(MD_Up)
 		for {
-			p.Floor = elevio.GetFloor()
+			p.Floor = GetFloor()
 			if p.Floor != -1 {
-				elevio.SetMotorDirection(elevio.MD_Stop)
+				SetMotorDirection(MD_Stop)
 				break
 			}
 		}
 	}
 	return &p
+}
+
+//Conversion functions:
+
+//TODO: Fix this
+
+func ElevatorToHRAElevState(elev Elevator) HRAElevState {
+	switch elev.Behaviour {
+	case EB_Idle, EB_Moving, EB_DoorOpen:
+		var elev_cab []bool
+		for i := 0; i < 4; i++ {
+			elev_cab = append(elev_cab, elev.Requests[i][2])
+		}
+		return HRAElevState{
+			Behavior:    Eb_toString(elev.Behaviour),
+			Floor:       elev.Floor,
+			Direction:   Direction_toString(elev.Dirn),
+			CabRequests: elev_cab,
+		}
+	case EB_Disconnected:
+		return HRAElevState{}
+	default:
+		return HRAElevState{}
+	}
 }
