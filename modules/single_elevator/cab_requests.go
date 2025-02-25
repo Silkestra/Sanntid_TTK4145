@@ -5,6 +5,7 @@ import (
 	"Driver-go/modules/elevio"
 	"fmt"
 )
+
 type Elevator = elevator.Elevator
 type Button = elevio.ButtonType
 
