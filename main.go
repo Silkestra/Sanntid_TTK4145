@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Driver-go/modules/elevator"
+	"Driver-go/modules/single_elevator"
 	"Driver-go/modules/network/bcast"
 	"Driver-go/modules/network/localip"
 	"Driver-go/modules/network/peers"
@@ -18,7 +18,7 @@ import (
 	"Driver-go/modules/worldview"
 )
 
-type Elevator = elevator.Elevator
+type Elevator = single_elevator.Elevator
 
 func main() {
 	
@@ -37,24 +37,21 @@ func main() {
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
 
-	var elev = elevator.Elevator_uninitialized(id)
+	var elev = single_elevator.Elevator_uninitialized()
 	//var d elevio.MotorDirection = elevio.MD_Up
 	//elevio.SetMotorDirection(d)
 
-	var world = worldview.InitWorldview(elev)
+	var world = worldview.InitWorldview(*elev, id)
 	//Network
 	
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(15647, id, peerTxEnable)
 	go peers.Receiver(15647, peerUpdateCh)
-	helloTx := make(chan elevator.Worldview)
-	helloRx := make(chan elevator.Worldview)
+	helloTx := make(chan worldview.Worldview)
+	helloRx := make(chan worldview.Worldview)
 	go bcast.Transmitter(16569, helloTx)
 	go bcast.Receiver(16569, helloRx)
-
-	//TODO: Package network functionality here 
-
 
 	go func() {
 		for {
@@ -97,7 +94,6 @@ func main() {
 		case a := <-drv_buttons:
 			fmt.Printf("%+v\n", a)
 			//elevio.SetButtonLamp(a.Button, a.Floor, true)
-
 			hallrequests.FillElevRequest(hallrequests.HallAssigner(world, elev), elev)
 			fsm.FsmOnRequestButtonPress(a.Floor, a.Button, elev)
 			fmt.Printf("%+v\n", a)

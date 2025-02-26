@@ -1,7 +1,7 @@
 package single_elevator
 
 import (
-	"Driver-go/modules/hallassigner"
+	"Driver-go/"
 )
 
 // Defining elevator
@@ -27,7 +27,7 @@ const (
 
 type Elevator struct {
 	Floor int
-	Dirn  MotorDirection
+	Dirn  elevio.MotorDirection
 	//Requests [elevio.N_FLOORS][elevio.N_BUTTONS]int
 	Requests  [4][3]bool
 	Behaviour ElevatorBehaviour
@@ -85,4 +85,3 @@ func Elevator_uninitialized() *Elevator {
 	return &p
 }
 
-//TODO: Fix this

@@ -1,14 +1,14 @@
 package network
 
 import (
-	"Driver-go/modules/elevator"
+	"Driver-go/modules/single_elevator"
 )
 
 // We define some custom struct to send over the network.
 // Note that all members we want to transmit must be public. Any private members
 //
 
-type Elevator = elevator.Elevator
+type Elevator = single_elevator.Elevator
 
 // will be received as zero-values.
 /* func RunNetwork(){

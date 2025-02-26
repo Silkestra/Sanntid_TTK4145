@@ -5,7 +5,6 @@ import (
 	"fmt"
 )
 
-
 // func init() {
 // 	elev = Elevator{
 // 		Floor:     -1,
@@ -35,22 +34,26 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 		if Requests_shouldClearImmediately(elev, btnFloor, btnType) {
 			timer.TimerStart(elev.Config.DoorOpenDuration_s)
 		} else {
-			//her
-			elev.Requests[btnFloor][btnType] = true
+			if btnType != BT_Nil{
+				elev.Requests[btnFloor][btnType] = true
+			}
 
 		}
 	case EB_Moving:
-		//her
-		elev.Requests[btnFloor][btnType] = true
+		if btnType != BT_Nil{
+			elev.Requests[btnFloor][btnType] = true
+		}
+		
 
 	case EB_Idle:
-		//her
-		elev.Requests[btnFloor][btnType] = true
-
+		if btnType != BT_Nil{
+			elev.Requests[btnFloor][btnType] = true
+		}
+		
 		output := Requests_chooseDirection(elev)
 		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour
-		fmt.Println("ouput", output.Behaviour)
+
 		switch elev.Behaviour {
 		case EB_DoorOpen:
 			SetDoorOpenLamp(true)
@@ -61,22 +64,17 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 		case EB_Idle:
 		}
 	}
-	setAllLights(elev)
-	fmt.Println("\nNew state:")
-	//printElevator()
+	setAllLights(elev) //move to control from worldview?, io own module?
 }
 
 func FsmOnFloorArrival(newFloor int, elev *Elevator) {
 	fmt.Printf("\n\nFloor arrival: %d\n", newFloor)
-	//printElevator()
 	elev.Floor = newFloor
 	SetFloorIndicator(elev.Floor)
 
 	switch elev.Behaviour {
 	case EB_Moving:
-		fmt.Printf("cheeck10")
 		if Requests_shouldStop(elev) {
-			fmt.Printf("yes")
 			SetMotorDirection(MotorDirection(0))
 			SetDoorOpenLamp(true)
 			elev = ClearRequestsAtCurrentFloor(elev)
@@ -85,13 +83,10 @@ func FsmOnFloorArrival(newFloor int, elev *Elevator) {
 			elev.Behaviour = EB_DoorOpen
 		}
 	}
-	fmt.Println("\nNew state:")
-	//printElevator()
 }
 
 func FsmOnDoorTimeout(elev *Elevator) {
 	fmt.Println("\n\nDoor timeout")
-	//printElevator()
 	output := Requests_chooseDirection(elev)
 	fmt.Println("ouput", output)
 	elev.Dirn = output.Dirn
@@ -105,6 +100,4 @@ func FsmOnDoorTimeout(elev *Elevator) {
 		SetDoorOpenLamp(false)
 		SetMotorDirection(elev.Dirn)
 	}
-	//fmt.Println("\nNew state:")
-	//printElevator()
 }

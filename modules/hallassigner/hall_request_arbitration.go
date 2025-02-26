@@ -14,8 +14,6 @@ import (
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
 type Elevator = single_elevator.Elevator
 
-
-
 type HRAElevState struct {
 	Behavior    string `json:"behaviour"`
 	Floor       int    `json:"floor"`
@@ -28,7 +26,7 @@ type HRAInput struct {
 	States       map[string]HRAElevState `json:"states"`
 }
 
-func FillElevState(elev Elevator) HRAElevState {
+func FillHRAElevState(elev Elevator) HRAElevState {
 	switch elev.Behaviour {
 	case single_elevator.EB_Idle, single_elevator.EB_Moving, single_elevator.EB_DoorOpen:
 		var elev_cab []bool
@@ -47,29 +45,29 @@ func FillElevState(elev Elevator) HRAElevState {
 		return HRAElevState{}
 	}
 }
-func FillInput(world Worldview, elev Elevator) HRAInput {
+
+func FillHRAInput(world worldview.Worldview) HRAInput {
 	states := make(map[string]HRAElevState)
-	for _, elev := range world.Elevators {
-		elev_state := FillElevState(elev)
-		if !isEmptyElevState(elev_state) {
-			states[strconv.Itoa(elev.ID)] = elev_state
+	for key, elev := range world.Elevators {
+		elev_state := FillHRAElevState(elev)
+		if !isEmptyHRAElevState(elev_state) {
+			states[strconv.Itoa(key)] = elev_state
 		}
 	}
 
 	return HRAInput{
-		HallRequests: single_elevator.MakeHallRequests(elev), //fetch from orderBook, fetch all U and B
+		HallRequests: worldview.MakeHallRequests(world), //fetch from orderBook, fetch all U and B
 		States:       states,
 	}
 }
 
 
-func isEmptyElevState(state HRAElevState) bool {
+func isEmptyHRAElevState(state HRAElevState) bool {
 	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
 
 
-func HallAssigner(world worldview.Worldview, elev *Elevator) map[string][][2]bool {
-
+func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 	hraExecutable := ""
 	switch runtime.GOOS {
 	case "darwin":
@@ -80,7 +78,7 @@ func HallAssigner(world worldview.Worldview, elev *Elevator) map[string][][2]boo
 		panic("OS not supported")
 	}
 
-	input := FillInput(world, elev)
+	input := FillHRAInput(world)
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
@@ -101,7 +99,7 @@ func HallAssigner(world worldview.Worldview, elev *Elevator) map[string][][2]boo
 		fmt.Println("json.Unmarshal error: ", err)
 
 	}
-	worldview
+	
 	fmt.Printf("output: \n")
 	for k, v := range *output {
 		fmt.Printf("%6v :  %+v\n", k, v)
@@ -111,10 +109,14 @@ func HallAssigner(world worldview.Worldview, elev *Elevator) map[string][][2]boo
 
 }
 
-func FillElevRequest(hallmap map[string][][2]bool, elev *Elevator) {
-	orders := hallmap[strconv.Itoa(elev.ID)]
+func HallassignerToElevRequest(hallmap map[string][][2]bool, id string) [4][2]bool {
+	orders := hallmap[id]
+	var requests[4][2]bool
 	for i, ordersOnFloor := range orders {
-		elev.Requests[i][0] = ordersOnFloor[0]
-		elev.Requests[i][1] = ordersOnFloor[1]
+		requests[i][0] = ordersOnFloor[0]
+		requests[i][1] = ordersOnFloor[1]
 	}
+	return requests
 }
+
+

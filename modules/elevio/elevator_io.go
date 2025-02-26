@@ -1,4 +1,4 @@
-package single_elevator
+package elevio
 
 import (
 	"fmt"
@@ -31,6 +31,7 @@ const (
 	BT_HallUp   ButtonType = 0
 	BT_HallDown            = 1
 	BT_Cab                 = 2
+	BT_Nil                 = 3
 )
 
 type ButtonEvent struct {
