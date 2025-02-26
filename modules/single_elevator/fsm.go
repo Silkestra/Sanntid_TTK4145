@@ -34,22 +34,21 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 		if Requests_shouldClearImmediately(elev, btnFloor, btnType) {
 			timer.TimerStart(elev.Config.DoorOpenDuration_s)
 		} else {
-			if btnType != BT_Nil{
+			if btnType != BT_Nil {
 				elev.Requests[btnFloor][btnType] = true
 			}
 
 		}
 	case EB_Moving:
-		if btnType != BT_Nil{
+		if btnType != BT_Nil {
 			elev.Requests[btnFloor][btnType] = true
 		}
-		
 
 	case EB_Idle:
-		if btnType != BT_Nil{
+		if btnType != BT_Nil {
 			elev.Requests[btnFloor][btnType] = true
 		}
-		
+
 		output := Requests_chooseDirection(elev)
 		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour

@@ -1,11 +1,10 @@
 package worldview
 
-import(
+import (
 	"Driver-go/modules/single_elevator"
-	"strconv"
 	"fmt"
+	"strconv"
 )
-
 
 type HallRequestStates int
 
@@ -16,14 +15,13 @@ const (
 	Unknown
 )
 
-type Worldview struct{
-	Elevators [3]single_elevator.Elevator
+type Worldview struct {
+	Elevators  [3]single_elevator.Elevator
 	OrderBooks [3][4][2]HallRequestStates
-	ID int
+	ID         int
 }
 
-
-func InitWorldview(elev single_elevator.Elevator, id string) *Worldview{
+func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 	num, err := strconv.Atoi(id)
 	if err != nil {
 		fmt.Errorf("invalid ID, must be an integer: %v", err)
@@ -47,7 +45,7 @@ func InitWorldview(elev single_elevator.Elevator, id string) *Worldview{
 		}
 	}
 
-	return world 
+	return world
 }
 
 func MakeHallRequests(world Worldview) [][2]bool {
@@ -84,72 +82,69 @@ func MakeHallRequests(world Worldview) [][2]bool {
 
 			if allUnconfirmed {
 				for i := 0; i < 3; i++ {
-					myWorld.OrderBooks[i][j][k] = Confirmed 
+					myWorld.OrderBooks[i][j][k] = Confirmed
 				}
 			}
 		}
 	}
 	return myWorld
 }
- */
+*/
 
-
-func UpdateElevatorStates(myWorld Worldview , newWorld Worldview) Worldview {
+func UpdateElevatorStates(myWorld Worldview, newWorld Worldview) Worldview {
 	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
 	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
 
-    for j := 0; j < 4; j++ { 
-        for k := 0; k < 2; k++ { 
-            for i := 0; i < 3; i++ { 
+	for j := 0; j < 4; j++ {
+		for k := 0; k < 2; k++ {
+			for i := 0; i < 3; i++ {
 
-                switch myWorld.OrderBooks[i][j][k] {
+				switch myWorld.OrderBooks[i][j][k] {
 
-                case Unconfirmed:
-                    allUnconfirmed := true
-                    for n := 0; n < 3; n++ {
-                        if myWorld.OrderBooks[n][j][k] != Unconfirmed {
-                            allUnconfirmed = false
-                            break
-                        }
-                    }
-                    if allUnconfirmed {
-                        myWorld.OrderBooks[i][j][k] = Confirmed
-                    }
+				case Unconfirmed:
+					allUnconfirmed := true
+					for n := 0; n < 3; n++ {
+						if myWorld.OrderBooks[n][j][k] != Unconfirmed {
+							allUnconfirmed = false
+							break
+						}
+					}
+					if allUnconfirmed {
+						myWorld.OrderBooks[i][j][k] = Confirmed
+					}
 
-                case Confirmed:
-                    doneFound := false
-                    for n := 0; n < 3; n++ {
-                        if myWorld.OrderBooks[n][j][k] == Done {
-                            doneFound = true
-                            break
-                        }
-                    }
-                    if doneFound {
-                        myWorld.OrderBooks[i][j][k] = Done
-                    }
+				case Confirmed:
+					doneFound := false
+					for n := 0; n < 3; n++ {
+						if myWorld.OrderBooks[n][j][k] == Done {
+							doneFound = true
+							break
+						}
+					}
+					if doneFound {
+						myWorld.OrderBooks[i][j][k] = Done
+					}
 
-                case Done:
-                    unconfirmedFound := false
-                    for n := 0; n < 3; n++ {
-                        if myWorld.OrderBooks[n][j][k] == Unconfirmed {
-                            unconfirmedFound = true
-                            break
-                        }
-                    }
-                    if unconfirmedFound {
-                        myWorld.OrderBooks[i][j][k] = Unconfirmed
-                    }
+				case Done:
+					unconfirmedFound := false
+					for n := 0; n < 3; n++ {
+						if myWorld.OrderBooks[n][j][k] == Unconfirmed {
+							unconfirmedFound = true
+							break
+						}
+					}
+					if unconfirmedFound {
+						myWorld.OrderBooks[i][j][k] = Unconfirmed
+					}
 
 				case Unknown:
 					myWorld.OrderBooks = newWorld.OrderBooks
 
-                default:
-                    fmt.Println("Unknown state encountered")
-                }
-            }
-        }
-    }
-    return myWorld
+				default:
+					fmt.Println("Unknown state encountered")
+				}
+			}
+		}
+	}
+	return myWorld
 }
-
-

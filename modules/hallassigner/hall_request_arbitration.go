@@ -61,11 +61,9 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 	}
 }
 
-
 func isEmptyHRAElevState(state HRAElevState) bool {
 	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
-
 
 func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 	hraExecutable := ""
@@ -99,7 +97,7 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 		fmt.Println("json.Unmarshal error: ", err)
 
 	}
-	
+
 	fmt.Printf("output: \n")
 	for k, v := range *output {
 		fmt.Printf("%6v :  %+v\n", k, v)
@@ -111,12 +109,10 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 
 func HallassignerToElevRequest(hallmap map[string][][2]bool, id string) [4][2]bool {
 	orders := hallmap[id]
-	var requests[4][2]bool
+	var requests [4][2]bool
 	for i, ordersOnFloor := range orders {
 		requests[i][0] = ordersOnFloor[0]
 		requests[i][1] = ordersOnFloor[1]
 	}
 	return requests
 }
-
-
