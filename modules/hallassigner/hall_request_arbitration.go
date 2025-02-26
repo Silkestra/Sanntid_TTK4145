@@ -1,7 +1,8 @@
-package hallrequests
+package hallassigner
 
 import (
-	"Driver-go/modules/elevator"
+	"Driver-go/modules/single_elevator"
+	"Driver-go/modules/worldview"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -11,8 +12,9 @@ import (
 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
-type Elevator = elevator.Elevator
-type Worldview = elevator.Worldview
+type Elevator = single_elevator.Elevator
+
+
 
 type HRAElevState struct {
 	Behavior    string `json:"behaviour"`
@@ -28,29 +30,24 @@ type HRAInput struct {
 
 func FillElevState(elev Elevator) HRAElevState {
 	switch elev.Behaviour {
-	case elevator.EB_Idle, elevator.EB_Moving, elevator.EB_DoorOpen:
+	case single_elevator.EB_Idle, single_elevator.EB_Moving, single_elevator.EB_DoorOpen:
 		var elev_cab []bool
 		for i := 0; i < 4; i++ {
 			elev_cab = append(elev_cab, elev.Requests[i][2])
 		}
 		return HRAElevState{
-			Behavior:    elevator.Eb_toString(elev.Behaviour),
+			Behavior:    single_elevator.Eb_toString(elev.Behaviour),
 			Floor:       elev.Floor,
-			Direction:   elevator.Direction_toString(elev.Dirn),
+			Direction:   single_elevator.Direction_toString(elev.Dirn),
 			CabRequests: elev_cab,
 		}
-	case elevator.EB_Disconnected:
+	case single_elevator.EB_Disconnected:
 		return HRAElevState{}
 	default:
 		return HRAElevState{}
 	}
 }
-
-func isEmptyElevState(state HRAElevState) bool {
-	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
-}
-
-func FillInput(world Worldview, elev *Elevator) HRAInput {
+func FillInput(world Worldview, elev Elevator) HRAInput {
 	states := make(map[string]HRAElevState)
 	for _, elev := range world.Elevators {
 		elev_state := FillElevState(elev)
@@ -60,12 +57,18 @@ func FillInput(world Worldview, elev *Elevator) HRAInput {
 	}
 
 	return HRAInput{
-		HallRequests: elevator.MakeHallRequests(elev), //fetch from orderBook, fetch all U and B
+		HallRequests: single_elevator.MakeHallRequests(elev), //fetch from orderBook, fetch all U and B
 		States:       states,
 	}
 }
 
-func HallAssigner(world Worldview, elev *Elevator) map[string][][2]bool {
+
+func isEmptyElevState(state HRAElevState) bool {
+	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
+}
+
+
+func HallAssigner(world worldview.Worldview, elev *Elevator) map[string][][2]bool {
 
 	hraExecutable := ""
 	switch runtime.GOOS {
@@ -98,7 +101,7 @@ func HallAssigner(world Worldview, elev *Elevator) map[string][][2]bool {
 		fmt.Println("json.Unmarshal error: ", err)
 
 	}
-
+	worldview
 	fmt.Printf("output: \n")
 	for k, v := range *output {
 		fmt.Printf("%6v :  %+v\n", k, v)

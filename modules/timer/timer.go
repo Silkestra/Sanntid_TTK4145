@@ -1,7 +1,6 @@
 package timer
 
 import (
-	"Driver-go/modules/single_elevator"
 	"time"
 )
 
