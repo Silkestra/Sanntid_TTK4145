@@ -1,7 +1,7 @@
 package single_elevator
 
 import (
-	"Driver-go/modules/timer"
+	"Driver-go/modules/elevio"
 	"fmt"
 )
 
@@ -18,34 +18,34 @@ import (
 // }
 
 func setAllLights(ev *Elevator) {
-	for floor := 0; floor < N_FLOORS; floor++ {
-		for btn := 0; btn < N_BUTTONS; btn++ {
-			SetButtonLamp(ButtonType(btn), floor, ev.Requests[floor][btn])
+	for floor := 0; floor < elevio.N_FLOORS; floor++ {
+		for btn := 0; btn < elevio.N_BUTTONS; btn++ {
+			elevio.SetButtonLamp(elevio.ButtonType(btn), floor, ev.Requests[floor][btn])
 		}
 	}
 }
 
-func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
+func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elevator) {
 	fmt.Printf("\n\nRequest button pressed: Floor %d, Type %d\n", btnFloor, btnType)
 	//printElevator()
 
 	switch elev.Behaviour {
 	case EB_DoorOpen:
 		if Requests_shouldClearImmediately(elev, btnFloor, btnType) {
-			timer.TimerStart(elev.Config.DoorOpenDuration_s)
+			TimerStart(elev.Config.DoorOpenDuration_s)
 		} else {
-			if btnType != BT_Nil {
+			if btnType != elevio.BT_Nil {
 				elev.Requests[btnFloor][btnType] = true
 			}
 
 		}
 	case EB_Moving:
-		if btnType != BT_Nil {
+		if btnType != elevio.BT_Nil {
 			elev.Requests[btnFloor][btnType] = true
 		}
 
 	case EB_Idle:
-		if btnType != BT_Nil {
+		if btnType != elevio.BT_Nil {
 			elev.Requests[btnFloor][btnType] = true
 		}
 
@@ -55,11 +55,11 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 
 		switch elev.Behaviour {
 		case EB_DoorOpen:
-			SetDoorOpenLamp(true)
-			timer.TimerStart(elev.Config.DoorOpenDuration_s)
+			elevio.SetDoorOpenLamp(true)
+			TimerStart(elev.Config.DoorOpenDuration_s)
 			elev = ClearRequestsAtCurrentFloor(elev)
 		case EB_Moving:
-			SetMotorDirection(elev.Dirn)
+			elevio.SetMotorDirection(elev.Dirn)
 		case EB_Idle:
 		}
 	}
@@ -69,15 +69,15 @@ func FsmOnRequestButtonPress(btnFloor int, btnType ButtonType, elev *Elevator) {
 func FsmOnFloorArrival(newFloor int, elev *Elevator) {
 	fmt.Printf("\n\nFloor arrival: %d\n", newFloor)
 	elev.Floor = newFloor
-	SetFloorIndicator(elev.Floor)
+	elevio.SetFloorIndicator(elev.Floor)
 
 	switch elev.Behaviour {
 	case EB_Moving:
 		if Requests_shouldStop(elev) {
-			SetMotorDirection(MotorDirection(0))
-			SetDoorOpenLamp(true)
+			elevio.SetMotorDirection(elevio.MotorDirection(0))
+			elevio.SetDoorOpenLamp(true)
 			elev = ClearRequestsAtCurrentFloor(elev)
-			timer.TimerStart(elev.Config.DoorOpenDuration_s)
+			TimerStart(elev.Config.DoorOpenDuration_s)
 			setAllLights(elev)
 			elev.Behaviour = EB_DoorOpen
 		}
@@ -92,11 +92,11 @@ func FsmOnDoorTimeout(elev *Elevator) {
 	elev.Behaviour = output.Behaviour
 	switch elev.Behaviour {
 	case EB_DoorOpen:
-		timer.TimerStart(elev.Config.DoorOpenDuration_s)
+		TimerStart(elev.Config.DoorOpenDuration_s)
 		elev = ClearRequestsAtCurrentFloor(elev)
 		setAllLights(elev)
 	case EB_Moving, EB_Idle:
-		SetDoorOpenLamp(false)
-		SetMotorDirection(elev.Dirn)
+		elevio.SetDoorOpenLamp(false)
+		elevio.SetMotorDirection(elev.Dirn)
 	}
 }

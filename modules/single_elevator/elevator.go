@@ -1,7 +1,5 @@
 package single_elevator
 
-// Defining elevator
-
 import (
 	"Driver-go/modules/elevio"
 )
@@ -18,7 +16,6 @@ const (
 var ObstructionActive bool
 
 type ClearRequestVariant int
-
 const (
 	CV_All ClearRequestVariant = iota
 	CV_InDirn
@@ -65,6 +62,7 @@ func Direction_toString(dirn elevio.MotorDirection) string {
 		return "disconnected"
 	}
 }
+
 
 func Elevator_uninitialized() *Elevator {
 	conf := Config{ClearRequestVariant: CV_InDirn, DoorOpenDuration_s: 3}
