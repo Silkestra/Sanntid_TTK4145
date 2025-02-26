@@ -22,7 +22,7 @@ type Worldview struct {
 	ID         int
 }
 
-func InitWorldview(elev single_elevator.Elevator, id string) (*Worldview) {
+func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 	num, err := strconv.Atoi(id)
 	if err != nil {
 		fmt.Errorf("invalid ID, must be an integer: %v", err)
@@ -92,27 +92,27 @@ func MakeHallRequests(world Worldview) [][2]bool {
 }
 */
 
-func UpdateMyElevator(newestElev single_elevator.Elevator, myWorld *Worldview){
+func UpdateMyElevator(newestElev single_elevator.Elevator, myWorld *Worldview) {
 	myWorld.Elevators[myWorld.ID] = newestElev
 }
 
-// får tilsendt Buttontype og Floor fra channels 
-func InsertInOrderBook(btnpressed elevio.ButtonEvent, myWorld *Worldview){
-	if btnpressed.Button == elevio.BT_HallUp || btnpressed.Button == elevio.BT_HallDown{
+// får tilsendt Buttontype og Floor fra channels
+func InsertInOrderBook(btnpressed elevio.ButtonEvent, myWorld *Worldview) {
+	if btnpressed.Button == elevio.BT_HallUp || btnpressed.Button == elevio.BT_HallDown {
 		myOrderBook := myWorld.OrderBooks[myWorld.ID]
 		myOrderBook[btnpressed.Floor][btnpressed.Button] = Unconfirmed
 	}
 }
 
-//hvordan finne rjeg tilbake til denne 
-func DoneInOrderBook(floor int, myWorld *Worldview){
-	for i, elev := range myWorld.Elevators{
-		
+// hvordan finne rjeg tilbake til denne
+func DoneInOrderBook(floor int, myWorld *Worldview) {
+	for i, elev := range myWorld.Elevators {
+
 	}
 }
 
-//send peers list from network heartbeat module
-func MarkAsUnknown(peer_new string, myWorld *Worldview){
+// send peers list from network heartbeat module
+func MarkAsUnknown(peer_new string, myWorld *Worldview) {
 	if peer_new == strconv.Itoa(myWorld.ID) {
 		for i := range myWorld.OrderBooks {
 			for j := range myWorld.OrderBooks[i] {
@@ -124,8 +124,8 @@ func MarkAsUnknown(peer_new string, myWorld *Worldview){
 	}
 }
 
-func MarkAsDisconnected(peer_lost []string, myWorld *Worldview){
-	for _, id := range peer_lost{
+func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
+	for _, id := range peer_lost {
 		num, err := strconv.Atoi(id)
 		if err != nil {
 			fmt.Errorf("invalid ID, must be an integer: %v", err)
@@ -135,8 +135,7 @@ func MarkAsDisconnected(peer_lost []string, myWorld *Worldview){
 
 }
 
-
-//TODO:  det her er fakked, legg til at dersom elevatoren som ordebooken tilhører har elev.Behaviour == EB_Disconnecteed --> ignorer 
+// TODO:  det her er fakked, legg til at dersom elevatoren som ordebooken tilhører har elev.Behaviour == EB_Disconnecteed --> ignorer
 func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
 	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
