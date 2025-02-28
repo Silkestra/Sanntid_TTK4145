@@ -193,3 +193,12 @@ func toBool(a byte) bool {
 	}
 	return b
 }
+
+func setAllLights(HallAndCabReq [4][3]bool) {
+	for floor := 0; floor < N_FLOORS; floor++ {
+		for btn := 0; btn < N_BUTTONS; btn++ {
+
+			SetButtonLamp(ButtonType(btn), floor, HallAndCabReq[floor][btn])
+		}
+	}
+}

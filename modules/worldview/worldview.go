@@ -64,6 +64,20 @@ func MakeHallRequests(world Worldview) [][2]bool {
 	return output
 }
 
+func CombineHallAndCabReq(myWorld Worldview) [4][3]bool {
+	halls := MakeHallRequests(myWorld)             // [4][2]bool
+	cabs := myWorld.Elevators[myWorld.ID].Requests // [4][1]bool
+	var combined [4][3]bool                        // [4][3]bool result
+
+	for floor := 0; floor < 4; floor++ {
+		combined[floor][0] = halls[floor][0] // Hall up
+		combined[floor][1] = halls[floor][1] // Hall down
+		combined[floor][2] = cabs[floor][0]  // Cab request
+	}
+
+	return combined
+}
+
 //Ta imot newWorldview over kanal, sette inn den heisen den har mottat worlview fra inn i mitt worldview av den heisen
 
 /* func UpdateMyWorldview(myWorld Worldview, newWorld Worldview) Worldview {
@@ -105,10 +119,10 @@ func InsertInOrderBook(btnpressed elevio.ButtonEvent, myWorld *Worldview) {
 }
 
 // requestDone fås inn som kanal fra cab_request/FSM når en request cleares, main
-func DoneInOrderBook(floor int, myWorld *Worldview, requestDoneCh elevio.ButtonEvent) {
-	btn = requestDoneCh.Button
-	floor = requestDoneCh.Floor
-	myWorld.OrderBooks[myWorld.ID][floor][btn] = Done
+func DoneInOrderBook(myWorld *Worldview, requestDoneCh elevio.ButtonEvent) {
+	floor := requestDoneCh.Floor
+	button := int(requestDoneCh.Button)
+	myWorld.OrderBooks[myWorld.ID][floor][button] = Done
 }
 
 // send peers list from network heartbeat module
@@ -132,7 +146,6 @@ func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
 		}
 		myWorld.Elevators[num].Behaviour = single_elevator.EB_Disconnected
 	}
-
 }
 
 // TODO:  det her er fakked, legg til at dersom elevatoren som ordebooken tilhører har elev.Behaviour == EB_Disconnecteed --> ignorer

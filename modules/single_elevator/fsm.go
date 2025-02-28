@@ -17,14 +17,6 @@ import (
 // 	}
 // }
 
-func setAllLights(ev *Elevator) {
-	for floor := 0; floor < elevio.N_FLOORS; floor++ {
-		for btn := 0; btn < elevio.N_BUTTONS; btn++ {
-			elevio.SetButtonLamp(elevio.ButtonType(btn), floor, ev.Requests[floor][btn])
-		}
-	}
-}
-
 func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elevator, SetDoorCh chan<- bool, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection) {
 	fmt.Printf("\n\nRequest button pressed: Floor %d, Type %d\n", btnFloor, btnType)
 	//printElevator()
@@ -65,7 +57,7 @@ func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elev
 		case EB_Idle:
 		}
 	}
-	setAllLights(elev) //move to control from worldview?, io own module?
+	//setAllLights(elev) //move to control from worldview?, io own module?
 }
 
 func FsmOnFloorArrival(newFloor int, elev *Elevator, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection, SetDoorCh chan<- bool) {
@@ -82,7 +74,7 @@ func FsmOnFloorArrival(newFloor int, elev *Elevator, requestDone chan<- elevio.B
 			SetDoorCh <- true
 			elev = ClearRequestsAtCurrentFloor(elev, requestDone)
 			TimerStart(elev.Config.DoorOpenDuration_s)
-			setAllLights(elev) //TODO
+			//setAllLights(elev) //TODO
 			elev.Behaviour = EB_DoorOpen
 		}
 	}
@@ -98,7 +90,7 @@ func FsmOnDoorTimeout(elev *Elevator, requestDone chan<- elevio.ButtonEvent, Mot
 	case EB_DoorOpen:
 		TimerStart(elev.Config.DoorOpenDuration_s)
 		elev = ClearRequestsAtCurrentFloor(elev, requestDone)
-		setAllLights(elev) //TODO
+		//setAllLights(elev) //TODO
 	case EB_Moving, EB_Idle:
 		//elevio.SetDoorOpenLamp(false)
 		SetDoorCh <- false
