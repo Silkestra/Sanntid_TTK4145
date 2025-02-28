@@ -25,7 +25,7 @@ func setAllLights(ev *Elevator) {
 	}
 }
 
-func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elevator) {
+func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elevator, SetDoorCh chan<- bool, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection) {
 	fmt.Printf("\n\nRequest button pressed: Floor %d, Type %d\n", btnFloor, btnType)
 	//printElevator()
 
@@ -55,18 +55,20 @@ func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elev
 
 		switch elev.Behaviour {
 		case EB_DoorOpen:
-			elevio.SetDoorOpenLamp(true)
+			//elevio.SetDoorOpenLamp(true)
+			SetDoorCh <- true
 			TimerStart(elev.Config.DoorOpenDuration_s)
-			elev = ClearRequestsAtCurrentFloor(elev)
+			elev = ClearRequestsAtCurrentFloor(elev, requestDone)
 		case EB_Moving:
-			elevio.SetMotorDirection(elev.Dirn)
+			MotorDirectionCh <- elev.Dirn
+			//elevio.SetMotorDirection(elev.Dirn)
 		case EB_Idle:
 		}
 	}
 	setAllLights(elev) //move to control from worldview?, io own module?
 }
 
-func FsmOnFloorArrival(newFloor int, elev *Elevator) {
+func FsmOnFloorArrival(newFloor int, elev *Elevator, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection, SetDoorCh chan<- bool) {
 	fmt.Printf("\n\nFloor arrival: %d\n", newFloor)
 	elev.Floor = newFloor
 	elevio.SetFloorIndicator(elev.Floor)
@@ -74,17 +76,19 @@ func FsmOnFloorArrival(newFloor int, elev *Elevator) {
 	switch elev.Behaviour {
 	case EB_Moving:
 		if Requests_shouldStop(elev) {
-			elevio.SetMotorDirection(elevio.MotorDirection(0))
-			elevio.SetDoorOpenLamp(true)
-			elev = ClearRequestsAtCurrentFloor(elev)
+			//elevio.SetMotorDirection(elevio.MotorDirection(0))
+			MotorDirectionCh <- elevio.MotorDirection(0)
+			//elevio.SetDoorOpenLamp(true)
+			SetDoorCh <- true
+			elev = ClearRequestsAtCurrentFloor(elev, requestDone)
 			TimerStart(elev.Config.DoorOpenDuration_s)
-			setAllLights(elev)
+			setAllLights(elev) //TODO
 			elev.Behaviour = EB_DoorOpen
 		}
 	}
 }
 
-func FsmOnDoorTimeout(elev *Elevator) {
+func FsmOnDoorTimeout(elev *Elevator, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection, SetDoorCh chan<- bool) {
 	fmt.Println("\n\nDoor timeout")
 	output := Requests_chooseDirection(elev)
 	fmt.Println("ouput", output)
@@ -93,10 +97,12 @@ func FsmOnDoorTimeout(elev *Elevator) {
 	switch elev.Behaviour {
 	case EB_DoorOpen:
 		TimerStart(elev.Config.DoorOpenDuration_s)
-		elev = ClearRequestsAtCurrentFloor(elev)
-		setAllLights(elev)
+		elev = ClearRequestsAtCurrentFloor(elev, requestDone)
+		setAllLights(elev) //TODO
 	case EB_Moving, EB_Idle:
-		elevio.SetDoorOpenLamp(false)
-		elevio.SetMotorDirection(elev.Dirn)
+		//elevio.SetDoorOpenLamp(false)
+		SetDoorCh <- false
+		//elevio.SetMotorDirection(elev.Dirn)
+		MotorDirectionCh <- elev.Dirn
 	}
 }

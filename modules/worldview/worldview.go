@@ -104,11 +104,11 @@ func InsertInOrderBook(btnpressed elevio.ButtonEvent, myWorld *Worldview) {
 	}
 }
 
-// hvordan finne rjeg tilbake til denne
-func DoneInOrderBook(floor int, myWorld *Worldview) {
-	for i, elev := range myWorld.Elevators {
-
-	}
+// requestDone fås inn som kanal fra cab_request/FSM når en request cleares, main
+func DoneInOrderBook(floor int, myWorld *Worldview, requestDoneCh elevio.ButtonEvent) {
+	btn = requestDoneCh.Button
+	floor = requestDoneCh.Floor
+	myWorld.OrderBooks[myWorld.ID][floor][btn] = Done
 }
 
 // send peers list from network heartbeat module

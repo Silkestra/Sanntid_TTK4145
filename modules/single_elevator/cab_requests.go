@@ -134,11 +134,12 @@ func Requests_shouldClearImmediately(e *Elevator, btn_floor int, btn_type Button
 	}
 }
 
-func ClearRequestsAtCurrentFloor(e *Elevator) *Elevator {
+func ClearRequestsAtCurrentFloor(e *Elevator, requestDone chan<- elevio.ButtonEvent) *Elevator {
 	switch e.Config.ClearRequestVariant {
 	case CV_All:
 		for btn := 0; btn < elevio.N_BUTTONS; btn++ {
 			e.Requests[e.Floor][btn] = false
+			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.ButtonType(btn)}
 		}
 
 	case CV_InDirn:
@@ -148,19 +149,27 @@ func ClearRequestsAtCurrentFloor(e *Elevator) *Elevator {
 		case elevio.MD_Up:
 			if !requests_above(e) && e.Requests[e.Floor][elevio.BT_HallUp] == false {
 				e.Requests[e.Floor][elevio.BT_HallDown] = false
+				requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
+
 			}
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
+			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallUp}
 
 		case elevio.MD_Down:
 			if !requests_below(e) && e.Requests[e.Floor][elevio.BT_HallDown] == false {
 				e.Requests[e.Floor][elevio.BT_HallUp] = false
+				requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
 			}
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
+			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
 
 		case elevio.MD_Stop:
-		default:
+		default: //waiting for both to arrive?
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
+			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallUp}
+			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
+
 		}
 	}
 	return e
