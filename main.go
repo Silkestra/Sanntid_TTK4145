@@ -135,14 +135,13 @@ func main() {
                 MarkAsUnknown(a.New, world)
                 
             case a := <- updatedLocalElevator: 
-            UpdateMyWorldview(a)
+                UpdateMyElevator(a)
 
             case a := <- localHallRequest:
                 InsertInOrderBook(a.ButtonEvent, world)
                 
-
             case a := <- recieveWorldView:               
-                world = UpdateElevatorStates(world, a)
+                *world = UpdateWorldView(world, a)
 
             case a := <-ticker.C:
                 transmittWorldView <- world
@@ -159,7 +158,7 @@ func main() {
         for{
             select{
             case a := <- worldViewToArbitration:
-                hallRequestToElevator <- HallassignerToElevRequest(hallassigner(a,ID))
+                hallRequestToElevator <- HallassignerToElevRequest(HallAssigner(a,ID))
             }
         }
     }
@@ -169,17 +168,7 @@ func main() {
 
     //numFloors := 4
     //elevio.Init("localhost:15657", numFloors)
-    var id string
-    flag.StringVar(&id, "id", "", "id of this peer")
-    flag.Parse()
-    if id == "" {
-        localIP, err := localip.LocalIP()
-        if err != nil {
-            fmt.Println(err)
-            localIP = "DISCONNECTED"
-        }
-        id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-    }
+   
 
     var elev = elevator.Elevator_uninitialized(id)
     //var d elevio.MotorDirection = elevio.MD_Up
@@ -220,6 +209,7 @@ func main() {
         return id
     }
 
+    
       /*   go func() {
             for {
                 helloTx <- *world
@@ -242,23 +232,7 @@ func main() {
             }
         }() */
                     //mulig denne funksjonen blir overflødig 
-        go Network_run(peerUpdateCh,    
-                       peerTxEnable,
-                       transmittWorldView,
-                       recieveWorldView,
-                       ) {  //merged periodic sends with 
-            for {     
-                case p := <-peerUpdateCh:
-                    fmt.Printf("Peer update:\n")
-                    fmt.Printf("  Peers:    %q\n", p.Peers)
-                    fmt.Printf("  New:      %q\n", p.New)
-                    fmt.Printf("  Lost:     %q\n", p.Lost)
-                    
-                case a := <-receiveWorldView:  // Fixed typo in channel name
-                    fmt.Printf("Received: %#v\n", a)
-                }
-            }
-        }()
+    
     }
 }
 
