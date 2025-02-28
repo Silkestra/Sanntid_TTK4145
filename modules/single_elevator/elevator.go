@@ -2,6 +2,7 @@ package single_elevator
 
 import (
 	"Driver-go/modules/elevio"
+	"fmt"
 )
 
 type ElevatorBehaviour int
@@ -78,4 +79,69 @@ func Elevator_uninitialized() *Elevator {
 		}
 	}
 	return &p
+}
+
+func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from hallarbitration
+	elevToWorld chan<- Elevator, // output channel from single elevator to worldview
+	drv_buttons chan elevio.ButtonEvent,
+	drv_floors <-chan int,
+	drv_obstr <-chan bool,
+	drv_stop <-chan bool,
+	drv_timeout <-chan bool,
+	setDoorCh chan<- bool,
+	requestDoneCh chan<- elevio.ButtonEvent,
+	motorDirectionCh chan<- elevio.MotorDirection,
+	localHallRequestChan chan<- elevio.ButtonEvent,
+	elev *Elevator) { // buttons from hardware
+
+	for {
+		select {
+		case newRequest := <-reqChan:
+			for i := 0; i < 4; i++ {
+				elev.Requests[i][0] = newRequest[i][0]
+				elev.Requests[i][1] = newRequest[i][1]
+			}
+			FsmOnRequestButtonPress(-1, elevio.BT_Nil, elev, setDoorCh, requestDoneCh, motorDirectionCh) //FSM is called to striclty act on what is already modified in requests
+			elevToWorld <- *elev
+
+		case a := <-drv_buttons:
+			if (elev.Behaviour == EB_DoorOpen) || (elev.Behaviour == EB_Idle) || (elev.Behaviour == EB_Moving) && ((a.Button == elevio.BT_HallUp) || (a.Button == elevio.BT_HallDown)) {
+				localHallRequestChan <- a //cend the hallcall to worldview
+				continue
+			}
+			FsmOnRequestButtonPress(a.Floor, a.Button, elev, setDoorCh, requestDoneCh, motorDirectionCh) // Fsm should only be called of button presses when CABcall or when disconnected
+			fmt.Printf("%+v\n", a)
+			elevToWorld <- *elev
+
+		case a := <-drv_floors:
+			fmt.Printf("check5")
+			FsmOnFloorArrival(a, elev, requestDoneCh, motorDirectionCh, setDoorCh)
+			elevToWorld <- *elev
+
+		case a := <-drv_obstr:
+			fmt.Printf("%+v\n", a)
+			if elev.Behaviour == EB_DoorOpen {
+				ObstructionActive = a
+				fmt.Println("obs:-", ObstructionActive)
+			}
+			if !a {
+				TimerStart(elev.Config.DoorOpenDuration_s)
+			}
+			fmt.Println("obs:-", ObstructionActive)
+			elevToWorld <- *elev
+
+		case a := <-drv_stop:
+			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh", "%+v\n", a)
+			close(drv_buttons)
+			elevToWorld <- *elev
+
+		case a := <-drv_timeout:
+			if !ObstructionActive { //Ignore timeout if obstruction is active
+				fmt.Printf("%+v\n", a)
+				FsmOnDoorTimeout(elev, requestDoneCh, motorDirectionCh, setDoorCh)
+				elevToWorld <- *elev
+			}
+
+		}
+	}
 }

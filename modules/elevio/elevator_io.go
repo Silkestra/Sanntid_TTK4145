@@ -202,3 +202,21 @@ func setAllLights(HallAndCabReq [4][3]bool) {
 		}
 	}
 }
+
+func elevator_io_run(motorDirection <-chan MotorDirection, setDoorCh <-chan bool, floorIndicatorCh <-chan int, stopLampCh <-chan bool, buttonLampCh <-chan bool, floorCh <-chan int, buttonCh <-chan ButtonType) {
+	for {
+		select {
+		case a := <-motorDirection:
+			SetMotorDirection(a)
+		case a := <-setDoorCh:
+			SetDoorOpenLamp(a)
+		case a := <-floorIndicatorCh:
+			SetFloorIndicator(a)
+		case a := <-stopLampCh:
+			SetStopLamp(a)
+		case a := <-buttonLampCh:
+			SetButtonLamp(<-buttonCh, <-floorCh, a)
+		}
+	}
+
+}

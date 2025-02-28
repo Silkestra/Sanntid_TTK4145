@@ -116,3 +116,14 @@ func HallassignerToElevRequest(hallmap map[string][][2]bool, id string) [4][2]bo
 	}
 	return requests
 }
+
+func HallArbitration_Run(worldViewToArbitration <-chan worldview.Worldview,
+	hallRequestToElevator chan<- [4][2]bool,
+	ID string) { //recives wolrdviev and outputs to elevator
+	for {
+		select {
+		case a := <-worldViewToArbitration:
+			hallRequestToElevator <- HallassignerToElevRequest(HallAssigner(a), ID)
+		}
+	}
+}

@@ -2,9 +2,11 @@ package worldview
 
 import (
 	"Driver-go/modules/elevio"
+	"Driver-go/modules/network/peers"
 	"Driver-go/modules/single_elevator"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 type HallRequestStates int
@@ -205,4 +207,36 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 		}
 	}
 	return myWorld
+}
+
+func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and new elevs comes from network module over channel
+	localHallRequest <-chan elevio.ButtonEvent, //local hall request event in elevator
+	updatedLocalElevator <-chan single_elevator.Elevator, //recives newest updates on local elevator
+	recieveWorldView <-chan Worldview,
+	worldViewToArbitration chan<- Worldview, //sends current worldview to arbitration logic
+	world *Worldview) { //worldview from peer on network
+
+	ticker := time.NewTicker(3 * time.Second) //rate of sending myworldview to network
+	defer ticker.Stop()
+	for {
+		select {
+
+		case a := <-peerUpdates: // should be struct containing Lost and new part of Peersupdate
+			MarkAsDisconnected(a.Lost, world) //
+			MarkAsUnknown(a.New, world)
+
+		case a := <-updatedLocalElevator:
+			UpdateMyElevator(a, world)
+
+		case a := <-localHallRequest:
+			InsertInOrderBook(a, world)
+
+		case a := <-recieveWorldView:
+			*world = UpdateWorldview(*world, a)
+
+		case a := <-ticker.C:
+			worldViewToArbitration <- *world
+			fmt.Println(a)
+		}
+	}
 }

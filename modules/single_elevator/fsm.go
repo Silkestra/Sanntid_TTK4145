@@ -80,7 +80,7 @@ func FsmOnFloorArrival(newFloor int, elev *Elevator, requestDone chan<- elevio.B
 	}
 }
 
-func FsmOnDoorTimeout(elev *Elevator, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection, SetDoorCh chan<- bool) {
+func FsmOnDoorTimeout(elev *Elevator, requestDoneCh chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection, SetDoorCh chan<- bool) {
 	fmt.Println("\n\nDoor timeout")
 	output := Requests_chooseDirection(elev)
 	fmt.Println("ouput", output)
@@ -89,7 +89,7 @@ func FsmOnDoorTimeout(elev *Elevator, requestDone chan<- elevio.ButtonEvent, Mot
 	switch elev.Behaviour {
 	case EB_DoorOpen:
 		TimerStart(elev.Config.DoorOpenDuration_s)
-		elev = ClearRequestsAtCurrentFloor(elev, requestDone)
+		elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 		//setAllLights(elev) //TODO
 	case EB_Moving, EB_Idle:
 		//elevio.SetDoorOpenLamp(false)
