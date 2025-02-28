@@ -10,6 +10,9 @@ import (
 
 type Elevator = single_elevator.Elevator
 
+
+func network_run(messages )
+
 // will be received as zero-values.
 /* func RunNetwork(){
 	// Our id can be anything. Here we pass it on the command line, using
