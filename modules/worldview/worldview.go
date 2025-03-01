@@ -214,6 +214,9 @@ func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and ne
 	updatedLocalElevator <-chan single_elevator.Elevator, //recives newest updates on local elevator
 	recieveWorldView <-chan Worldview,
 	worldViewToArbitration chan<- Worldview, //sends current worldview to arbitration logic
+	transmittWorldView chan<- Worldview,
+	requestDoneCh <-chan elevio.ButtonEvent,
+	requestForLightsCh chan<- [4][3]bool,
 	world *Worldview) { //worldview from peer on network
 
 	ticker := time.NewTicker(3 * time.Second) //rate of sending myworldview to network
@@ -227,15 +230,21 @@ func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and ne
 
 		case a := <-updatedLocalElevator:
 			UpdateMyElevator(a, world)
+			requestForLightsCh <- CombineHallAndCabReq(*world)
 
 		case a := <-localHallRequest:
 			InsertInOrderBook(a, world)
-
+			requestForLightsCh <- CombineHallAndCabReq(*world)
 		case a := <-recieveWorldView:
 			*world = UpdateWorldview(*world, a)
+			requestForLightsCh <- CombineHallAndCabReq(*world)
 
+		case a := <-requestDoneCh:
+			DoneInOrderBook(world, a)
+			requestForLightsCh <- CombineHallAndCabReq(*world)
 		case a := <-ticker.C:
 			worldViewToArbitration <- *world
+			transmittWorldView <- *world
 			fmt.Println(a)
 		}
 	}

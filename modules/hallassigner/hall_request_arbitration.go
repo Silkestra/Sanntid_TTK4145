@@ -68,7 +68,7 @@ func isEmptyHRAElevState(state HRAElevState) bool {
 func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 	hraExecutable := ""
 	switch runtime.GOOS {
-	case "darwin":
+	case "linux":
 		hraExecutable = "hall_request_assigner"
 	case "windows":
 		hraExecutable = "hall_request_assigner.exe"
@@ -84,7 +84,7 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 
 	}
 
-	ret, err := exec.Command("../hall_request_assigner/"+hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
+	ret, err := exec.Command(hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
 	if err != nil {
 		fmt.Println("exec.Command error: ", err)
 		fmt.Println(string(ret))

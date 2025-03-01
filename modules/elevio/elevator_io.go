@@ -82,12 +82,16 @@ func PollButtons(receiver chan<- ButtonEvent) {
 			for b := ButtonType(0); b < 3; b++ {
 				v := GetButton(b, f)
 				if v != prev[f][b] && v != false {
+					fmt.Println(v)
 					receiver <- ButtonEvent{f, ButtonType(b)}
+
 				}
 				prev[f][b] = v
+
 			}
 		}
 	}
+
 }
 
 func PollFloorSensor(receiver chan<- int) {
@@ -203,7 +207,11 @@ func setAllLights(HallAndCabReq [4][3]bool) {
 	}
 }
 
-func elevator_io_run(motorDirection <-chan MotorDirection, setDoorCh <-chan bool, floorIndicatorCh <-chan int, stopLampCh <-chan bool, buttonLampCh <-chan bool, floorCh <-chan int, buttonCh <-chan ButtonType) {
+func Elevator_io_run(motorDirection <-chan MotorDirection,
+	setDoorCh <-chan bool,
+	floorIndicatorCh <-chan int,
+	stopLampCh <-chan bool,
+	requestForLightsCh <-chan [4][3]bool) {
 	for {
 		select {
 		case a := <-motorDirection:
@@ -214,8 +222,8 @@ func elevator_io_run(motorDirection <-chan MotorDirection, setDoorCh <-chan bool
 			SetFloorIndicator(a)
 		case a := <-stopLampCh:
 			SetStopLamp(a)
-		case a := <-buttonLampCh:
-			SetButtonLamp(<-buttonCh, <-floorCh, a)
+		case a := <-requestForLightsCh:
+			setAllLights(a)
 		}
 	}
 

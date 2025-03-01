@@ -92,6 +92,7 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 	requestDoneCh chan<- elevio.ButtonEvent,
 	motorDirectionCh chan<- elevio.MotorDirection,
 	localHallRequestChan chan<- elevio.ButtonEvent,
+	stopLampCh chan<- bool,
 	elev *Elevator) { // buttons from hardware
 
 	for {
@@ -132,8 +133,9 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 
 		case a := <-drv_stop:
 			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh", "%+v\n", a)
+			stopLampCh <- true
 			close(drv_buttons)
-			elevToWorld <- *elev
+			
 
 		case a := <-drv_timeout:
 			if !ObstructionActive { //Ignore timeout if obstruction is active
