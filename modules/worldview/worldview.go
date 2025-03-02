@@ -51,8 +51,6 @@ func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 		for j := range world.OrderBooks[i] {
 			for k := range world.OrderBooks[i][j] {
 				if i == world.ID {
-					world.OrderBooks[i][j][k] = Done
-				} else {
 					world.OrderBooks[i][j][k] = Unknown
 				}
 			}
