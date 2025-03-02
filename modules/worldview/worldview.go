@@ -235,7 +235,7 @@ func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and ne
 	requestForLightsCh chan<- [4][3]bool,
 	world *Worldview) { //worldview from peer on network
 
-	ticker := time.NewTicker(3 * time.Second) //rate of sending myworldview to network
+	ticker := time.NewTicker(300 * time.Millisecond) //rate of sending myworldview to network
 	defer ticker.Stop()
 	for {
 		select {
