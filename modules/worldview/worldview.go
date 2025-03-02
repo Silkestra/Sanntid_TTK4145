@@ -178,7 +178,7 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 				canConfirmOrder := true
 				for n := 0; n < 3; n++ {
 					if !slices.Contains(lost, n) {
-						if myWorld.OrderBooks[n][j][k] == Done {
+						if ((myWorld.OrderBooks[n][j][k] == Done) || (myWorld.OrderBooks[n][j][k] == Unknown)) {
 							canConfirmOrder = false
 							break
 						}
@@ -218,6 +218,7 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 
 			case Unknown:
 				myWorld.OrderBooks = newWorld.OrderBooks
+				myWorld.Elevators = newWorld.Elevators
 
 			default:
 				fmt.Println("Unknown state encountered")
