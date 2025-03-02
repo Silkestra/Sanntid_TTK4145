@@ -52,6 +52,10 @@ func Init(addr string, numFloors int) {
 		panic(err.Error())
 	}
 	_initialized = true
+	var zeros [4][3]bool
+	setAllLights(zeros)
+	SetStopLamp(false)
+
 }
 
 func SetMotorDirection(dir MotorDirection) {

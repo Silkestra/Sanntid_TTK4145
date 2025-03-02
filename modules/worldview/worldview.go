@@ -50,7 +50,7 @@ func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 	for i := range world.OrderBooks {
 		for j := range world.OrderBooks[i] {
 			for k := range world.OrderBooks[i][j] {
-				world.OrderBooks[i][j][k] = Done
+				world.OrderBooks[i][j][k] = Unknown
 			}
 		}
 	}
@@ -75,13 +75,13 @@ func MakeHallRequests(world Worldview) [][2]bool {
 
 func CombineHallAndCabReq(myWorld Worldview) [4][3]bool {
 	halls := MakeHallRequests(myWorld)             // [4][2]bool
-	cabs := myWorld.Elevators[myWorld.ID].Requests // [4][1]bool
+	cabs := myWorld.Elevators[myWorld.ID].Requests // [4][3]bool
 	var combined [4][3]bool                        // [4][3]bool result
 
 	for floor := 0; floor < 4; floor++ {
 		combined[floor][0] = halls[floor][0] // Hall up
 		combined[floor][1] = halls[floor][1] // Hall down
-		combined[floor][2] = cabs[floor][0]  // Cab request
+		combined[floor][2] = cabs[floor][2]  // Cab request
 	}
 
 	return combined
@@ -235,7 +235,7 @@ func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and ne
 	requestForLightsCh chan<- [4][3]bool,
 	world *Worldview) { //worldview from peer on network
 
-	ticker := time.NewTicker(300 * time.Millisecond) //rate of sending myworldview to network
+	ticker := time.NewTicker(1 * time.Second) //rate of sending myworldview to network
 	defer ticker.Stop()
 	for {
 		select {
@@ -253,6 +253,7 @@ func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and ne
 			requestForLightsCh <- CombineHallAndCabReq(*world)
 		case a := <-recieveWorldView:
 			*world = UpdateWorldview(*world, a)
+			fmt.Println("requestsforlights", CombineHallAndCabReq(*world))
 			requestForLightsCh <- CombineHallAndCabReq(*world)
 
 		case a := <-requestDoneCh:
