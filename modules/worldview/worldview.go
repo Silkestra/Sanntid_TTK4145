@@ -5,6 +5,7 @@ import (
 	"Driver-go/modules/network/peers"
 	"Driver-go/modules/single_elevator"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -155,59 +156,69 @@ func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
 	}
 }
 
-// TODO:  det her er fakked, legg til at dersom elevatoren som ordebooken tilhører har elev.Behaviour == EB_Disconnecteed --> ignorer
+// TODO:  det her er fakked, legg til at dersom elevatoren som ordebooken tilhører har elev.Behaviour == EB_Disconnected --> ignorer
 func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
 	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
+	var lost []int
+	for i, elev := range myWorld.Elevators {
+		if elev.Behaviour == single_elevator.EB_Disconnected {
+			lost = append(lost, i)
+		}
+	}
 
 	for j := 0; j < 4; j++ {
 		for k := 0; k < 2; k++ {
-			for i := 0; i < 3; i++ {
 
-				switch myWorld.OrderBooks[i][j][k] {
+			switch myWorld.OrderBooks[myWorld.ID][j][k] {
 
-				case Unconfirmed:
-					allUnconfirmed := true
-					for n := 0; n < 3; n++ {
-						if myWorld.OrderBooks[n][j][k] != Unconfirmed {
-							allUnconfirmed = false
+			case Unconfirmed:
+				canConfirmOrder := true
+				for n := 0; n < 3; n++ {
+					if !slices.Contains(lost, n) {
+						if myWorld.OrderBooks[n][j][k] == Done {
+							canConfirmOrder = false
 							break
 						}
 					}
-					if allUnconfirmed {
-						myWorld.OrderBooks[i][j][k] = Confirmed
-					}
+				}
+				if canConfirmOrder {
+					myWorld.OrderBooks[myWorld.ID][j][k] = Confirmed
+				}
 
-				case Confirmed:
-					doneFound := false
-					for n := 0; n < 3; n++ {
+			case Confirmed:
+				doneFound := false
+				for n := 0; n < 3; n++ {
+					if !slices.Contains(lost, n) {
 						if myWorld.OrderBooks[n][j][k] == Done {
 							doneFound = true
 							break
 						}
 					}
-					if doneFound {
-						myWorld.OrderBooks[i][j][k] = Done
-					}
+				}
+				if doneFound {
+					myWorld.OrderBooks[myWorld.ID][j][k] = Done
+				}
 
-				case Done:
-					unconfirmedFound := false
-					for n := 0; n < 3; n++ {
+			case Done:
+				unconfirmedFound := false
+				for n := 0; n < 3; n++ {
+					if !slices.Contains(lost, n) {
 						if myWorld.OrderBooks[n][j][k] == Unconfirmed {
 							unconfirmedFound = true
 							break
 						}
 					}
-					if unconfirmedFound {
-						myWorld.OrderBooks[i][j][k] = Unconfirmed
-					}
-
-				case Unknown:
-					myWorld.OrderBooks = newWorld.OrderBooks
-
-				default:
-					fmt.Println("Unknown state encountered")
 				}
+				if unconfirmedFound {
+					myWorld.OrderBooks[myWorld.ID][j][k] = Unconfirmed
+				}
+
+			case Unknown:
+				myWorld.OrderBooks = newWorld.OrderBooks
+
+			default:
+				fmt.Println("Unknown state encountered")
 			}
 		}
 	}
