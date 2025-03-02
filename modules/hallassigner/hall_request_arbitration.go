@@ -52,7 +52,7 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 	states := make(map[string]HRAElevState)
 	for key, elev := range world.Elevators {
 		elev_state := FillHRAElevState(elev)
-		if !isEmptyHRAElevState(elev_state) {
+		if !isEmptyHRAElevState(elev_state) && !(elev.Behaviour == single_elevator.EB_Disconnected){
 			states[strconv.Itoa(key)] = elev_state
 		}
 	}
