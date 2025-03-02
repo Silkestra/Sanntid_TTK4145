@@ -178,7 +178,7 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 				canConfirmOrder := true
 				for n := 0; n < 3; n++ {
 					if !slices.Contains(lost, n) {
-						if ((myWorld.OrderBooks[n][j][k] == Done) || (myWorld.OrderBooks[n][j][k] == Unknown)) {
+						if (myWorld.OrderBooks[n][j][k] == Done) {
 							canConfirmOrder = false
 							break
 						}
