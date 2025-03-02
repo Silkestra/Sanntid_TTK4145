@@ -149,25 +149,31 @@ func ClearRequestsAtCurrentFloor(e *Elevator, requestDone chan<- elevio.ButtonEv
 		case elevio.MD_Up:
 			if !requests_above(e) && e.Requests[e.Floor][elevio.BT_HallUp] == false {
 				e.Requests[e.Floor][elevio.BT_HallDown] = false
+				fmt.Println("1:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown})
 				requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
 
 			}
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
+			fmt.Println("2:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallUp})
 			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallUp}
 
 		case elevio.MD_Down:
 			if !requests_below(e) && e.Requests[e.Floor][elevio.BT_HallDown] == false {
 				e.Requests[e.Floor][elevio.BT_HallUp] = false
+				fmt.Println("3:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown})
 				requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
 			}
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
+			fmt.Println("4:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown})
 			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
 
-		case elevio.MD_Stop:
+		//case elevio.MD_Stop:
 		default: //waiting for both to arrive?
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
+			fmt.Println("5:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown})
 			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallUp}
+			fmt.Println("6:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown})
 			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}
 
 		}

@@ -40,6 +40,12 @@ func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 
 	world.Elevators[num] = elev
 
+	for i := range world.Elevators {
+		if i != num {
+			world.Elevators[i].Behaviour = single_elevator.EB_Disconnected
+		}
+	}
+
 	for i := range world.OrderBooks {
 		for j := range world.OrderBooks[i] {
 			for k := range world.OrderBooks[i][j] {
@@ -115,8 +121,7 @@ func UpdateMyElevator(newestElev single_elevator.Elevator, myWorld *Worldview) {
 // får tilsendt Buttontype og Floor fra channels
 func InsertInOrderBook(btnpressed elevio.ButtonEvent, myWorld *Worldview) {
 	if btnpressed.Button == elevio.BT_HallUp || btnpressed.Button == elevio.BT_HallDown {
-		myOrderBook := myWorld.OrderBooks[myWorld.ID]
-		myOrderBook[btnpressed.Floor][btnpressed.Button] = Unconfirmed
+		myWorld.OrderBooks[myWorld.ID][btnpressed.Floor][btnpressed.Button] = Unconfirmed
 	}
 }
 

@@ -102,11 +102,12 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 				elev.Requests[i][0] = newRequest[i][0]
 				elev.Requests[i][1] = newRequest[i][1]
 			}
+			fmt.Println("Request from reChan: ", elev.Requests)
 			FsmOnRequestButtonPress(-1, elevio.BT_Nil, elev, setDoorCh, requestDoneCh, motorDirectionCh) //FSM is called to striclty act on what is already modified in requests
 			elevToWorld <- *elev
 
 		case a := <-drv_buttons:
-			if (elev.Behaviour == EB_DoorOpen) || (elev.Behaviour == EB_Idle) || (elev.Behaviour == EB_Moving) && ((a.Button == elevio.BT_HallUp) || (a.Button == elevio.BT_HallDown)) {
+			if ((elev.Behaviour == EB_DoorOpen) || (elev.Behaviour == EB_Idle) || (elev.Behaviour == EB_Moving)) && ((a.Button == elevio.BT_HallUp) || (a.Button == elevio.BT_HallDown)) {
 				localHallRequestChan <- a //cend the hallcall to worldview
 				continue
 			}
@@ -115,7 +116,7 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 			elevToWorld <- *elev
 
 		case a := <-drv_floors:
-			fmt.Printf("check5")
+			fmt.Printf(" Floorarrive ")
 			FsmOnFloorArrival(a, elev, requestDoneCh, motorDirectionCh, setDoorCh)
 			elevToWorld <- *elev
 
@@ -135,7 +136,6 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh", "%+v\n", a)
 			stopLampCh <- true
 			close(drv_buttons)
-			
 
 		case a := <-drv_timeout:
 			if !ObstructionActive { //Ignore timeout if obstruction is active

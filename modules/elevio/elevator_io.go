@@ -91,7 +91,6 @@ func PollButtons(receiver chan<- ButtonEvent) {
 			}
 		}
 	}
-
 }
 
 func PollFloorSensor(receiver chan<- int) {

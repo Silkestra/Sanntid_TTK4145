@@ -39,6 +39,7 @@ func FillHRAElevState(elev Elevator) HRAElevState {
 			Direction:   single_elevator.Direction_toString(elev.Dirn),
 			CabRequests: elev_cab,
 		}
+
 	case single_elevator.EB_Disconnected:
 		return HRAElevState{}
 	default:
@@ -47,6 +48,7 @@ func FillHRAElevState(elev Elevator) HRAElevState {
 }
 
 func FillHRAInput(world worldview.Worldview) HRAInput {
+	fmt.Println("world:", world)
 	states := make(map[string]HRAElevState)
 	for key, elev := range world.Elevators {
 		elev_state := FillHRAElevState(elev)
@@ -54,6 +56,8 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 			states[strconv.Itoa(key)] = elev_state
 		}
 	}
+	//fmt.Println("hrainput: ", states)
+	//fmt.Println("makehallrequest: ", worldview.MakeHallRequests(world))
 
 	return HRAInput{
 		HallRequests: worldview.MakeHallRequests(world), //fetch from orderBook, fetch all U and B
@@ -77,6 +81,7 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 	}
 
 	input := FillHRAInput(world)
+	fmt.Println("This input to hallarbritration: ",input)
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
