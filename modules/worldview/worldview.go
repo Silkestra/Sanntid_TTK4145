@@ -144,6 +144,7 @@ func MarkAsUnknown(peer_new string, myWorld *Worldview) {
 			}
 		}
 	}
+
 }
 
 func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
@@ -215,7 +216,7 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 				}
 
 			case Unknown:
-				myWorld.OrderBooks = newWorld.OrderBooks
+				myWorld.OrderBooks[j][k] = newWorld.OrderBooks[j][k]
 
 			default:
 				fmt.Println("Unknown state encountered")
