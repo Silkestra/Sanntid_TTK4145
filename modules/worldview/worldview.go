@@ -216,7 +216,7 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 				}
 
 			case Unknown:
-				myWorld.OrderBooks[j][k] = newWorld.OrderBooks[j][k]
+				myWorld.OrderBooks[myWorld.ID][j][k] = newWorld.OrderBooks[newWorld.ID][j][k]
 
 			default:
 				fmt.Println("Unknown state encountered")
