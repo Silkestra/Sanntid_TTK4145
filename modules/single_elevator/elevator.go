@@ -30,6 +30,7 @@ type Elevator struct {
 	Requests  [4][3]bool
 	Behaviour ElevatorBehaviour
 	Config    Config
+	Available bool 
 }
 
 type Config struct {
@@ -93,6 +94,7 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 	motorDirectionCh chan<- elevio.MotorDirection,
 	localHallRequestChan chan<- elevio.ButtonEvent,
 	stopLampCh chan<- bool,
+	drv_timeout_Available <-chan bool,
 	elev *Elevator) { // buttons from hardware
 
 	for {
@@ -119,6 +121,9 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 			fmt.Printf(" Floorarrive ")
 			FsmOnFloorArrival(a, elev, requestDoneCh, motorDirectionCh, setDoorCh)
 			elevToWorld <- *elev
+			elev.Available = true 
+			TimerStart(elev.Config.DoorOpenDuration_s, "available")    //start availible check 
+
 
 		case a := <-drv_obstr:
 			fmt.Printf("%+v\n", a)
@@ -127,7 +132,7 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 				fmt.Println("obs:-", ObstructionActive)
 			}
 			if !a {
-				TimerStart(elev.Config.DoorOpenDuration_s)
+				TimerStart(elev.Config.DoorOpenDuration_s,"door")
 			}
 			fmt.Println("obs:-", ObstructionActive)
 			elevToWorld <- *elev
@@ -143,6 +148,10 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 				FsmOnDoorTimeout(elev, requestDoneCh, motorDirectionCh, setDoorCh)
 				elevToWorld <- *elev
 			}
+		case a := <-drv_timeout_Available:
+			fmt.Printf("%+v\n", a)
+			elev.Available = false
+		
 
 		}
 	}

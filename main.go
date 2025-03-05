@@ -8,6 +8,7 @@ import (
 	"Driver-go/modules/single_elevator"
 	"Driver-go/modules/worldview"
 	"fmt"
+	"os"
 )
 
 type Elevator = single_elevator.Elevator
@@ -16,19 +17,23 @@ func HardWareInit(drv_buttons chan<- elevio.ButtonEvent,
 	drv_floors chan<- int,
 	drv_obstr chan<- bool,
 	drv_stop chan<- bool,
-	drv_timeout chan<- bool) {
+	drv_timeout chan<- bool,
+	drv_timeout_Available chan<- bool,
+	elev *Elevator) {
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 	go single_elevator.PollTimeout(drv_timeout)
+	go single_elevator.PollAvailableTimeout(drv_timeout_Available, elev)
 }
 
 func main() {
 
 	numFloors := 4
-	elevio.Init("localhost:15657", numFloors)
+	println(os.Args[2])
+	elevio.Init("localhost:"+os.Args[2], numFloors) //"localhost:15657"
 	fmt.Printf("elevio inited")
 
 	//Network
@@ -54,17 +59,13 @@ func main() {
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
 	drv_timeout := make(chan bool)
+	drv_timeout_Available := make(chan bool)
 
 	//Worldview
 	localHallRequest := make(chan elevio.ButtonEvent)           // Read-only channel for local hall request events
 	updatedLocalElevator := make(chan single_elevator.Elevator) // Read-only channel for updates on local elevator
 
-	HardWareInit(drv_buttons,
-		drv_floors,
-		drv_obstr,
-		drv_stop,
-		drv_timeout)
-	fmt.Printf("hardware inited")
+	
 
 	ID := network.InitNetwork(peerUpdateCh, //init og runnework deles for å unngå go i go
 		peerTxEnable,
@@ -75,16 +76,23 @@ func main() {
 	var elev = single_elevator.Elevator_uninitialized()
 	fmt.Printf("elevator inited")
 
-	var world = worldview.InitWorldview(*elev, ID)
-    fmt.Printf("world inited")
+	HardWareInit(drv_buttons,
+		drv_floors,
+		drv_obstr,
+		drv_stop,
+		drv_timeout,
+		drv_timeout_Available,
+		elev)
+	fmt.Printf("hardware inited")
 
+	var world = worldview.InitWorldview(*elev, ID)
+	fmt.Printf("world inited")
 
 	go elevio.Elevator_io_run(motorDirectionCh,
 		setDoorCh,
 		drv_floors,
 		stopLampCh,
 		requestForLightsCh)
-    
 
 	go single_elevator.Single_Elevator_Run(hallRequestToElevator, //new request recived from hallarbitration
 		updatedLocalElevator, // output channel from single elevator to worldview
@@ -98,8 +106,8 @@ func main() {
 		motorDirectionCh,
 		localHallRequest,
 		stopLampCh,
+		drv_timeout_Available,
 		elev)
-    
 
 	go hallassigner.HallArbitration_Run(worldViewToArbitration,
 		hallRequestToElevator,

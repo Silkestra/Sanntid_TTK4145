@@ -52,7 +52,7 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 	states := make(map[string]HRAElevState)
 	for key, elev := range world.Elevators {
 		elev_state := FillHRAElevState(elev)
-		if !isEmptyHRAElevState(elev_state) && !(elev.Behaviour == single_elevator.EB_Disconnected){
+		if !isEmptyHRAElevState(elev_state) && !(elev.Behaviour == single_elevator.EB_Disconnected || (!elev.Available && key != world.ID)) {
 			states[strconv.Itoa(key)] = elev_state
 		}
 	}
@@ -81,7 +81,7 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 	}
 
 	input := FillHRAInput(world)
-	fmt.Println("This input to hallarbritration: ",input)
+	fmt.Println("This input to hallarbritration: ", input)
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
