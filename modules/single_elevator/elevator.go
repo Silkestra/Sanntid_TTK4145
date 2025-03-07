@@ -92,9 +92,9 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 	setDoorCh chan<- bool,
 	requestDoneCh chan<- elevio.ButtonEvent,
 	motorDirectionCh chan<- elevio.MotorDirection,
-	localHallRequestChan chan<- elevio.ButtonEvent,
 	stopLampCh chan<- bool,
 	drv_timeout_Available <-chan bool,
+	cabChan <-chan []bool,
 	elev *Elevator) { // buttons from hardware
 
 	for {
@@ -104,21 +104,29 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 				elev.Requests[i][0] = newRequest[i][0]
 				elev.Requests[i][1] = newRequest[i][1]
 			}
-			fmt.Println("Request from reChan: ", elev.Requests)
+
 			FsmOnRequestButtonPress(-1, elevio.BT_Nil, elev, setDoorCh, requestDoneCh, motorDirectionCh) //FSM is called to striclty act on what is already modified in requests
 			elevToWorld <- *elev
 			if elev.Behaviour == EB_Idle {
 				TimerStart(elev.Config.DoorOpenDuration_s, "available")
 			}
 
-		case a := <-drv_buttons:
-			if ((elev.Behaviour == EB_DoorOpen) || (elev.Behaviour == EB_Idle) || (elev.Behaviour == EB_Moving)) && ((a.Button == elevio.BT_HallUp) || (a.Button == elevio.BT_HallDown)) {
-				localHallRequestChan <- a //cend the hallcall to worldview
-				continue
+		/* case a := <-drv_buttons:
+		if ((elev.Behaviour == EB_DoorOpen) || (elev.Behaviour == EB_Idle) || (elev.Behaviour == EB_Moving)) && ((a.Button == elevio.BT_HallUp) || (a.Button == elevio.BT_HallDown)) {
+			localHallRequestChan <- a //cend the hallcall to worldview
+			continue
+		}
+		FsmOnRequestButtonPress(a.Floor, a.Button, elev, setDoorCh, requestDoneCh, motorDirectionCh) // Fsm should only be called of button presses when CABcall or when disconnected
+		fmt.Printf("%+v\n", a)
+		elevToWorld <- *elev */
+
+		case cabRequest := <-cabChan:
+			for i := 0; i < 4; i++ {
+				elev.Requests[i][2] = cabRequest[i]
 			}
-			FsmOnRequestButtonPress(a.Floor, a.Button, elev, setDoorCh, requestDoneCh, motorDirectionCh) // Fsm should only be called of button presses when CABcall or when disconnected
-			fmt.Printf("%+v\n", a)
+			FsmOnRequestButtonPress(-1, elevio.BT_Nil, elev, setDoorCh, requestDoneCh, motorDirectionCh) //FSM is called to striclty act on what is already modified in requests
 			elevToWorld <- *elev
+			fmt.Println("Request from reChan: ", elev.Requests)
 
 		case a := <-drv_floors:
 			fmt.Printf(" Floorarrive ")

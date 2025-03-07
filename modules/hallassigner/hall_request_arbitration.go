@@ -26,18 +26,18 @@ type HRAInput struct {
 	States       map[string]HRAElevState `json:"states"`
 }
 
-func FillHRAElevState(elev Elevator) HRAElevState {
+func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	switch elev.Behaviour {
 	case single_elevator.EB_Idle, single_elevator.EB_Moving, single_elevator.EB_DoorOpen:
-		var elev_cab []bool
+		/* var elev_cab []bool
 		for i := 0; i < 4; i++ {
 			elev_cab = append(elev_cab, elev.Requests[i][2])
-		}
+		} */
 		return HRAElevState{
 			Behavior:    single_elevator.Eb_toString(elev.Behaviour),
 			Floor:       elev.Floor,
 			Direction:   single_elevator.Direction_toString(elev.Dirn),
-			CabRequests: elev_cab,
+			CabRequests: worldview.MakeCabRequests(world),
 		}
 
 	case single_elevator.EB_Disconnected:
@@ -51,7 +51,7 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 	fmt.Println("world:", world)
 	states := make(map[string]HRAElevState)
 	for key, elev := range world.Elevators {
-		elev_state := FillHRAElevState(elev)
+		elev_state := FillHRAElevState(elev, world)
 		if !isEmptyHRAElevState(elev_state) && !(elev.Behaviour == single_elevator.EB_Disconnected || (!elev.Available && key != world.ID)) {
 			states[strconv.Itoa(key)] = elev_state
 		}

@@ -62,10 +62,8 @@ func main() {
 	drv_timeout_Available := make(chan bool)
 
 	//Worldview
-	localHallRequest := make(chan elevio.ButtonEvent)           // Read-only channel for local hall request events
+	worldviewToCab := make(chan []bool)                         // Read-only channel for local hall request events
 	updatedLocalElevator := make(chan single_elevator.Elevator) // Read-only channel for updates on local elevator
-
-	
 
 	ID := network.InitNetwork(peerUpdateCh, //init og runnework deles for å unngå go i go
 		peerTxEnable,
@@ -104,9 +102,9 @@ func main() {
 		setDoorCh,
 		requestDoneCh,
 		motorDirectionCh,
-		localHallRequest,
 		stopLampCh,
 		drv_timeout_Available,
+		worldviewToCab,
 		elev)
 
 	go hallassigner.HallArbitration_Run(worldViewToArbitration,
@@ -114,13 +112,14 @@ func main() {
 		ID)
 
 	go worldview.WorldView_Run(peerUpdateCh, //updates on lost and new elevs comes from network module over channel
-		localHallRequest,     //local hall request event in elevator
+		drv_buttons,          //local hall request event in elevator
 		updatedLocalElevator, //recives newest updates on local elevator
 		recieveWorldView,
 		worldViewToArbitration, //sends current worldview to arbitration logic
 		transmittWorldView,
 		requestDoneCh,
 		requestForLightsCh,
+		worldviewToCab,
 		world)
 
 	select {}

@@ -144,6 +144,7 @@ func ClearRequestsAtCurrentFloor(e *Elevator, requestDone chan<- elevio.ButtonEv
 
 	case CV_InDirn:
 		e.Requests[e.Floor][elevio.BT_Cab] = false
+		requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_Cab}
 
 		switch e.Dirn {
 		case elevio.MD_Up:

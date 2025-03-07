@@ -10,19 +10,20 @@ import (
 	"time"
 )
 
-type HallRequestStates int
+type RequestStates int
 
 const (
-	Unconfirmed HallRequestStates = iota
+	Unconfirmed RequestStates = iota
 	Confirmed
 	Done
 	Unknown
 )
 
 type Worldview struct {
-	Elevators  [3]single_elevator.Elevator
-	OrderBooks [3][4][2]HallRequestStates
-	ID         int
+	Elevators     [3]single_elevator.Elevator
+	OrderBooks    [3][4][2]RequestStates
+	ID            int
+	CabOrderBooks [3][3][4]RequestStates
 }
 
 func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
@@ -55,6 +56,14 @@ func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 		}
 	}
 
+	for i := range world.CabOrderBooks {
+		for j := range world.CabOrderBooks[i] {
+			for k := range world.CabOrderBooks[i][j] {
+				world.CabOrderBooks[i][j][k] = Unknown
+			}
+		}
+	}
+
 	return world
 }
 
@@ -73,15 +82,27 @@ func MakeHallRequests(world Worldview) [][2]bool {
 	return output
 }
 
+func MakeCabRequests(world Worldview) []bool {
+	output := make([]bool, len(world.CabOrderBooks[world.ID][world.ID]))
+	for i, val := range world.CabOrderBooks[world.ID][world.ID] {
+		if val == Unconfirmed || val == Confirmed {
+			output[i] = true
+		} else {
+			output[i] = false
+		}
+	}
+	return output
+}
+
 func CombineHallAndCabReq(myWorld Worldview) [4][3]bool {
-	halls := MakeHallRequests(myWorld)             // [4][2]bool
-	cabs := myWorld.Elevators[myWorld.ID].Requests // [4][3]bool
-	var combined [4][3]bool                        // [4][3]bool result
+	halls := MakeHallRequests(myWorld) // [4][2]bool
+	cabs := MakeCabRequests(myWorld)   // [4]bool
+	var combined [4][3]bool            // [4][3]bool result
 
 	for floor := 0; floor < 4; floor++ {
 		combined[floor][0] = halls[floor][0] // Hall up
 		combined[floor][1] = halls[floor][1] // Hall down
-		combined[floor][2] = cabs[floor][2]  // Cab request
+		combined[floor][2] = cabs[floor]     // Cab request
 	}
 
 	return combined
@@ -103,7 +124,6 @@ func CombineHallAndCabReq(myWorld Worldview) [4][3]bool {
 					break
 				}
 			}
-
 			if allUnconfirmed {
 				for i := 0; i < 3; i++ {
 					myWorld.OrderBooks[i][j][k] = Confirmed
@@ -124,13 +144,21 @@ func InsertInOrderBook(btnpressed elevio.ButtonEvent, myWorld *Worldview) {
 	if btnpressed.Button == elevio.BT_HallUp || btnpressed.Button == elevio.BT_HallDown {
 		myWorld.OrderBooks[myWorld.ID][btnpressed.Floor][btnpressed.Button] = Unconfirmed
 	}
+
+	if btnpressed.Button == elevio.BT_Cab {
+		myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][btnpressed.Floor] = Unconfirmed
+	}
 }
 
 // requestDone fås inn som kanal fra cab_request/FSM når en request cleares, main
 func DoneInOrderBook(myWorld *Worldview, requestDoneCh elevio.ButtonEvent) {
 	floor := requestDoneCh.Floor
 	button := int(requestDoneCh.Button)
-	myWorld.OrderBooks[myWorld.ID][floor][button] = Done
+	if button == elevio.BT_Cab {
+		myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][floor] = Done
+	} else {
+		myWorld.OrderBooks[myWorld.ID][floor][button] = Done
+	}
 }
 
 // send peers list from network heartbeat module
@@ -143,8 +171,15 @@ func MarkAsUnknown(peer_new string, myWorld *Worldview) {
 				}
 			}
 		}
-	}
 
+		for i := range myWorld.CabOrderBooks[myWorld.ID] {
+			if i != myWorld.ID {
+				for j := range myWorld.CabOrderBooks[myWorld.ID][i] {
+					myWorld.CabOrderBooks[myWorld.ID][i][j] = Unknown
+				}
+			}
+		}
+	}
 }
 
 func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
@@ -153,20 +188,25 @@ func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
 		if err != nil {
 			fmt.Errorf("invalid ID, must be an integer: %v", err)
 		}
-		myWorld.Elevators[num].Behaviour = single_elevator.EB_Disconnected
+		if num < 3 && num > 0 {
+			myWorld.Elevators[num].Behaviour = single_elevator.EB_Disconnected
+
+		}
 	}
 }
 
 func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
 	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
+	myWorld.CabOrderBooks[newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID]
+	myWorld.CabOrderBooks[myWorld.ID][newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID][newWorld.ID]
 	var lost []int
 	for i, elev := range myWorld.Elevators {
 		if elev.Behaviour == single_elevator.EB_Disconnected {
 			lost = append(lost, i)
 		}
 	}
-
+	//Orderbook cylic counter
 	for j := 0; j < 4; j++ {
 		for k := 0; k < 2; k++ {
 
@@ -222,20 +262,75 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 			}
 		}
 	}
+	//Caborderbook cylic counter
+	for k := 0; k < 4; k++ {
+		switch myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k] {
+
+		case Unconfirmed:
+			canConfirmOrder := true
+			for n := 0; n < 3; n++ {
+				if !slices.Contains(lost, n) {
+					if myWorld.CabOrderBooks[n][myWorld.ID][k] == Done {
+						canConfirmOrder = false
+						break
+					}
+				}
+			}
+			if canConfirmOrder {
+				myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k] = Confirmed
+			}
+
+		case Confirmed:
+			doneFound := false
+			for n := 0; n < 3; n++ {
+				if !slices.Contains(lost, n) {
+					if myWorld.CabOrderBooks[n][myWorld.ID][k] == Done {
+						doneFound = true
+						break
+					}
+				}
+			}
+			if doneFound {
+				myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k] = Done
+			}
+
+		case Done:
+			unconfirmedFound := false
+			for n := 0; n < 3; n++ {
+				if !slices.Contains(lost, n) {
+					if myWorld.CabOrderBooks[n][myWorld.ID][k] == Unconfirmed {
+						unconfirmedFound = true
+						break
+					}
+				}
+			}
+
+			if unconfirmedFound {
+				myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k] = Unconfirmed
+			}
+
+		case Unknown:
+			myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k] = newWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k]
+
+		default:
+			fmt.Println("Unknown state encountered")
+		}
+	}
 	return myWorld
 }
 
 func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and new elevs comes from network module over channel
-	localHallRequest <-chan elevio.ButtonEvent, //local hall request event in elevator
+	localRequest <-chan elevio.ButtonEvent, //local hall request event in elevator
 	updatedLocalElevator <-chan single_elevator.Elevator, //recives newest updates on local elevator
 	recieveWorldView <-chan Worldview,
 	worldViewToArbitration chan<- Worldview, //sends current worldview to arbitration logic
 	transmittWorldView chan<- Worldview,
 	requestDoneCh <-chan elevio.ButtonEvent,
 	requestForLightsCh chan<- [4][3]bool,
+	worldviewToCab chan<- []bool,
 	world *Worldview) { //worldview from peer on network
 
-	ticker := time.NewTicker(1 * time.Second) //rate of sending myworldview to network
+	ticker := time.NewTicker(500 * time.Millisecond) //rate of sending myworldview to network
 	defer ticker.Stop()
 	for {
 		select {
@@ -248,13 +343,17 @@ func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and ne
 			UpdateMyElevator(a, world)
 			requestForLightsCh <- CombineHallAndCabReq(*world)
 
-		case a := <-localHallRequest:
+		case a := <-localRequest:
+			fmt.Printf("recived local")
 			InsertInOrderBook(a, world)
 			requestForLightsCh <- CombineHallAndCabReq(*world)
+			worldviewToCab <- MakeCabRequests(*world)
+
 		case a := <-recieveWorldView:
 			*world = UpdateWorldview(*world, a)
 			fmt.Println("requestsforlights", CombineHallAndCabReq(*world))
 			requestForLightsCh <- CombineHallAndCabReq(*world)
+			worldviewToCab <- MakeCabRequests(*world)
 
 		case a := <-requestDoneCh:
 			DoneInOrderBook(world, a)
