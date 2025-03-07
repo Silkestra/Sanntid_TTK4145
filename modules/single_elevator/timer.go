@@ -18,7 +18,7 @@ var (
 func TimerStart(duration float64, timerType string) {
 	switch timerType {
 	case "available":
-		timerEndTimeAvailable = time.Now().Add(time.Duration(duration) * 5 * time.Second)
+		timerEndTimeAvailable = time.Now().Add(time.Duration(duration) * 3 * time.Second)
 		timerActiveAvailable = true
 	case "door":
 		timerEndTime = time.Now().Add(time.Duration(duration) * time.Second)
@@ -52,7 +52,7 @@ func TimerTimedOutAvailable(elev Elevator) bool {
 			}
 		}
 	}
-	return timerActive && time.Now().After(timerEndTimeAvailable) && active_requests
+	return timerActiveAvailable && time.Now().After(timerEndTimeAvailable) && active_requests
 }
 
 func PollAvailableTimeout(receiver chan<- bool, elev *Elevator) {

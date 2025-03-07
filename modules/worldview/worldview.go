@@ -157,7 +157,6 @@ func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
 	}
 }
 
-// TODO:  det her er fakked, legg til at dersom elevatoren som ordebooken tilhører har elev.Behaviour == EB_Disconnected --> ignorer
 func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
 	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
