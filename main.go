@@ -8,8 +8,13 @@ import (
 	"Driver-go/modules/single_elevator"
 	"Driver-go/modules/worldview"
 	"fmt"
+	"net"
 	"os"
+	"os/exec"
+	"time"
 )
+
+var backupDisable bool = true
 
 type Elevator = single_elevator.Elevator
 
@@ -29,11 +34,43 @@ func HardWareInit(drv_buttons chan<- elevio.ButtonEvent,
 	go single_elevator.PollAvailableTimeout(drv_timeout_Available, elev)
 }
 
+func heartbeatToBackup(ID string, port string) {
+	//Create backup
+	cmd := exec.Command("gnome-terminal", "--", "go", "run", "./backup/backup.go", ID, port)
+	cmd.Run()
+
+	//Network conn
+	serverAddr, err := net.ResolveUDPAddr("udp", "localhost:800"+ID)
+	if err != nil {
+		fmt.Println("Error server address", err)
+		return
+	}
+
+	conn, err := net.DialUDP("udp", nil, serverAddr)
+	if err != nil {
+		fmt.Println("Error connecting", err)
+		return
+	}
+	defer conn.Close()
+
+	for {
+		time.Sleep(1 * time.Second)
+		fmt.Println("Attempting to send data...")
+		_, err = conn.Write([]byte("hei"))
+		if err != nil {
+			fmt.Println("Error sending:", err)
+		} else {
+			fmt.Println("Data sent successfully")
+		}
+
+	}
+}
+
 func main() {
 
 	numFloors := 4
-	println(os.Args[2])
-	elevio.Init("localhost:"+os.Args[2], numFloors) //"localhost:15657"
+	port := os.Args[2]
+	elevio.Init("localhost:"+port, numFloors) //"localhost:15657"
 	fmt.Printf("elevio inited")
 
 	//Network
@@ -121,7 +158,9 @@ func main() {
 		requestForLightsCh,
 		worldviewToCab,
 		world)
-
+	if backupDisable {
+		go heartbeatToBackup(ID, port)
+	}
 	select {}
 }
 
