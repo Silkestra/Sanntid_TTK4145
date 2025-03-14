@@ -3,6 +3,7 @@ package single_elevator
 import (
 	"Driver-go/modules/elevio"
 	"fmt"
+	"os"
 )
 
 type ElevatorBehaviour int
@@ -104,9 +105,11 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 				elev.Requests[i][0] = newRequest[i][0]
 				elev.Requests[i][1] = newRequest[i][1]
 			}
-
+			fmt.Println("Before fsm, elevatior 108")
 			FsmOnRequestButtonPress(-1, elevio.BT_Nil, elev, setDoorCh, requestDoneCh, motorDirectionCh) //FSM is called to striclty act on what is already modified in requests
+			fmt.Println("After fsm, elevatior 108")
 			elevToWorld <- *elev
+			fmt.Println("Elev to world sent, elevator 111: ")
 			if elev.Behaviour == EB_Idle {
 				TimerStart(elev.Config.DoorOpenDuration_s, "available")
 			}
@@ -124,7 +127,9 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 			for i := 0; i < 4; i++ {
 				elev.Requests[i][2] = cabRequest[i]
 			}
-			FsmOnRequestButtonPress(-1, elevio.BT_Nil, elev, setDoorCh, requestDoneCh, motorDirectionCh) //FSM is called to striclty act on what is already modified in requests
+			fmt.Println("Before fsm, 129 elevator: ")
+			FsmOnRequestButtonPress(-1, elevio.BT_Nil, elev, setDoorCh, requestDoneCh, motorDirectionCh)
+			fmt.Println("After button press, 131 elevator: ") //FSM is called to striclty act on what is already modified in requests
 			elevToWorld <- *elev
 			fmt.Println("Request from reChan: ", elev.Requests)
 
@@ -150,7 +155,9 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 		case a := <-drv_stop:
 			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh", "%+v\n", a)
 			stopLampCh <- true
+			motorDirectionCh <- elevio.MD_Stop
 			close(drv_buttons)
+			os.Exit(0)
 
 		case a := <-drv_timeout:
 			if !ObstructionActive { //Ignore timeout if obstruction is active

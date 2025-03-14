@@ -17,8 +17,9 @@ import (
 // 	}
 // }
 
+// TODO: Change name according to funcionality
 func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elevator, SetDoorCh chan<- bool, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection) {
-	fmt.Printf("\n\nRequest button pressed: Floor %d, Type %d\n", btnFloor, btnType)
+	fmt.Printf("\n\nRequest button pressed, fsm 22: Floor %d, Type %d\n", btnFloor, btnType)
 	//printElevator()
 
 	switch elev.Behaviour {
@@ -50,7 +51,11 @@ func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elev
 			//elevio.SetDoorOpenLamp(true)
 			SetDoorCh <- true
 			TimerStart(elev.Config.DoorOpenDuration_s,"door")
+			fmt.Println("DoorOpen start timer on req button press, 54")
+			fmt.Println("Behaviour: fsm 55, ", elev.Behaviour)
 			elev = ClearRequestsAtCurrentFloor(elev, requestDone)
+			fmt.Println("DoorOpen req cleared on req button press, 56")
+
 		case EB_Moving:
 			MotorDirectionCh <- elev.Dirn
 			//elevio.SetMotorDirection(elev.Dirn)

@@ -144,7 +144,10 @@ func ClearRequestsAtCurrentFloor(e *Elevator, requestDone chan<- elevio.ButtonEv
 
 	case CV_InDirn:
 		e.Requests[e.Floor][elevio.BT_Cab] = false
+		fmt.Println("Request clearing, cab 147")
+		fmt.Println(elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_Cab})
 		requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_Cab}
+		fmt.Println("Request sent, cab 147")
 
 		switch e.Dirn {
 		case elevio.MD_Up:
@@ -172,7 +175,7 @@ func ClearRequestsAtCurrentFloor(e *Elevator, requestDone chan<- elevio.ButtonEv
 		default: //waiting for both to arrive?
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
-			fmt.Println("5:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown})
+			fmt.Println("5:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallUp})
 			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallUp}
 			fmt.Println("6:", elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown})
 			requestDone <- elevio.ButtonEvent{Floor: e.Floor, Button: elevio.BT_HallDown}

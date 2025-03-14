@@ -55,6 +55,7 @@ func Init(addr string, numFloors int) {
 	var zeros [4][3]bool
 	setAllLights(zeros)
 	SetStopLamp(false)
+	SetDoorOpenLamp(false)
 
 }
 
@@ -86,7 +87,7 @@ func PollButtons(receiver chan<- ButtonEvent) {
 			for b := ButtonType(0); b < 3; b++ {
 				v := GetButton(b, f)
 				if v != prev[f][b] && v != false {
-					fmt.Println(v)
+					fmt.Println("Poll buttons, elevio:", v)
 					receiver <- ButtonEvent{f, ButtonType(b)}
 
 				}

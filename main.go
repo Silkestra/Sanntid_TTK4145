@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-var backupDisable bool = true
+var backupEnable bool = false
 
 type Elevator = single_elevator.Elevator
 
@@ -81,7 +81,7 @@ func main() {
 
 	//Single elevator
 	setDoorCh := make(chan bool)                         // channel for setting door state
-	requestDoneCh := make(chan elevio.ButtonEvent)       // channel for signaling when request is done
+	requestDoneCh := make(chan elevio.ButtonEvent, 10000000)    // channel for signaling when request is done
 	motorDirectionCh := make(chan elevio.MotorDirection) // channel for motor direction
 	stopLampCh := make(chan bool)                        //setting stoplamp
 	requestForLightsCh := make(chan [4][3]bool)
@@ -158,7 +158,7 @@ func main() {
 		requestForLightsCh,
 		worldviewToCab,
 		world)
-	if backupDisable {
+	if backupEnable {
 		go heartbeatToBackup(ID, port)
 	}
 	select {}

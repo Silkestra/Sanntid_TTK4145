@@ -96,15 +96,17 @@ func MakeCabRequests(world Worldview) []bool {
 
 func CombineHallAndCabReq(myWorld Worldview) [4][3]bool {
 	halls := MakeHallRequests(myWorld) // [4][2]bool
-	cabs := MakeCabRequests(myWorld)   // [4]bool
-	var combined [4][3]bool            // [4][3]bool result
+	fmt.Println("halls", halls, "wolrdvew 99")
+	cabs := MakeCabRequests(myWorld) // [4]bool
+	fmt.Println("cabs", cabs, "wolrdvew 101")
+	var combined [4][3]bool // [4][3]bool result
 
 	for floor := 0; floor < 4; floor++ {
 		combined[floor][0] = halls[floor][0] // Hall up
 		combined[floor][1] = halls[floor][1] // Hall down
 		combined[floor][2] = cabs[floor]     // Cab request
 	}
-
+	fmt.Println(combined, "wolrd 109")
 	return combined
 }
 
@@ -154,10 +156,30 @@ func InsertInOrderBook(btnpressed elevio.ButtonEvent, myWorld *Worldview) {
 func DoneInOrderBook(myWorld *Worldview, requestDoneCh elevio.ButtonEvent) {
 	floor := requestDoneCh.Floor
 	button := int(requestDoneCh.Button)
+	fmt.Println("Doneinorderbook, worldview 159 floor and button", floor, button)
+	var lost []int
+	for i, elev := range myWorld.Elevators {
+		if elev.Behaviour == single_elevator.EB_Disconnected {
+			lost = append(lost, i)
+		}
+	}
+	fmt.Println("elevators lost in doneinordferbook 166: ", lost)
+
 	if button == elevio.BT_Cab {
+		tick := 0
+		for tick != 3-len(lost) {
+			tick =0
+			for i := 0; i < 3; i++ {
+				if !slices.Contains(lost, i) && myWorld.CabOrderBooks[myWorld.ID][i][floor] == Confirmed {
+					tick += 1
+				}
+			}
+		}
 		myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][floor] = Done
+		fmt.Println("Cab order cleared, worldview 159")
 	} else {
 		myWorld.OrderBooks[myWorld.ID][floor][button] = Done
+		fmt.Println("Hall order cleared, worldview 159")
 	}
 }
 
@@ -344,24 +366,33 @@ func WorldView_Run(peerUpdates <-chan peers.PeerUpdate, //updates on lost and ne
 			requestForLightsCh <- CombineHallAndCabReq(*world)
 
 		case a := <-localRequest:
-			fmt.Printf("recived local")
+			fmt.Printf("recived local, worlview")
 			InsertInOrderBook(a, world)
 			requestForLightsCh <- CombineHallAndCabReq(*world)
 			worldviewToCab <- MakeCabRequests(*world)
 
 		case a := <-recieveWorldView:
 			*world = UpdateWorldview(*world, a)
-			fmt.Println("requestsforlights", CombineHallAndCabReq(*world))
+			fmt.Println("requestsforlights, worldview 356", CombineHallAndCabReq(*world))
 			requestForLightsCh <- CombineHallAndCabReq(*world)
-			worldviewToCab <- MakeCabRequests(*world)
+			fmt.Println(world.Elevators[world.ID].Behaviour)
+			fmt.Println("cab and hall sent to elevio, worldview 358")
+			fmt.Println("Caborderbook, wordlview 362", world.CabOrderBooks)
+			b := MakeCabRequests(*world)
+			fmt.Println("Cabreq, Worldview 363", b)
+			worldviewToCab <- b
+			fmt.Println("Sent cabs to world, worldview 360")
 
 		case a := <-requestDoneCh:
+			fmt.Println("request is done")
 			DoneInOrderBook(world, a)
 			requestForLightsCh <- CombineHallAndCabReq(*world)
+			//worldviewToCab <- MakeCabRequests(*world)
+			fmt.Println("Request done, worldview 365")
 		case a := <-ticker.C:
 			worldViewToArbitration <- *world
 			transmittWorldView <- *world
-			fmt.Println(a)
+			fmt.Println("Ticker worldview 367", a)
 		}
 	}
 }
