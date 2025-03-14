@@ -72,7 +72,7 @@ func MakeHallRequests(world Worldview) [][2]bool {
 
 	for i, row := range world.OrderBooks[world.ID] {
 		for j, val := range row {
-			if val == Unconfirmed || val == Confirmed {
+			if val == Confirmed {
 				output[i][j] = true
 			} else {
 				output[i][j] = false
@@ -85,7 +85,7 @@ func MakeHallRequests(world Worldview) [][2]bool {
 func MakeCabRequests(world Worldview) []bool {
 	output := make([]bool, len(world.CabOrderBooks[world.ID][world.ID]))
 	for i, val := range world.CabOrderBooks[world.ID][world.ID] {
-		if val == Unconfirmed || val == Confirmed {
+		if val == Confirmed {
 			output[i] = true
 		} else {
 			output[i] = false
@@ -157,26 +157,30 @@ func DoneInOrderBook(myWorld *Worldview, requestDoneCh elevio.ButtonEvent) {
 	floor := requestDoneCh.Floor
 	button := int(requestDoneCh.Button)
 	fmt.Println("Doneinorderbook, worldview 159 floor and button", floor, button)
-	var lost []int
-	for i, elev := range myWorld.Elevators {
-		if elev.Behaviour == single_elevator.EB_Disconnected {
-			lost = append(lost, i)
-		}
-	}
-	fmt.Println("elevators lost in doneinordferbook 166: ", lost)
+	// var lost []int
+	// for i, elev := range myWorld.Elevators {
+	// 	if elev.Behaviour == single_elevator.EB_Disconnected {
+	// 		lost = append(lost, i)
+	// 	}
+	// }
+	// fmt.Println("elevators lost in doneinordferbook 166: ", lost)
 
+	// if button == elevio.BT_Cab {
+	// 	tick := 0
+	// 	for tick != 3-len(lost) {
+	// 		tick = 0
+	// 		for i := 0; i < 3; i++ {
+	// 			if !slices.Contains(lost, i) && myWorld.CabOrderBooks[myWorld.ID][i][floor] == Confirmed {
+	// 				tick += 1
+	// 			}
+	// 		}
+	// 	}
+	// 	myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][floor] = Done
+	// 	fmt.Println("Cab order cleared, worldview 159")
 	if button == elevio.BT_Cab {
-		tick := 0
-		for tick != 3-len(lost) {
-			tick =0
-			for i := 0; i < 3; i++ {
-				if !slices.Contains(lost, i) && myWorld.CabOrderBooks[myWorld.ID][i][floor] == Confirmed {
-					tick += 1
-				}
-			}
-		}
 		myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][floor] = Done
 		fmt.Println("Cab order cleared, worldview 159")
+
 	} else {
 		myWorld.OrderBooks[myWorld.ID][floor][button] = Done
 		fmt.Println("Hall order cleared, worldview 159")

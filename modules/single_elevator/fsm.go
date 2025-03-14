@@ -25,7 +25,7 @@ func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elev
 	switch elev.Behaviour {
 	case EB_DoorOpen:
 		if Requests_shouldClearImmediately(elev, btnFloor, btnType) {
-			TimerStart(elev.Config.DoorOpenDuration_s,"door")
+			TimerStart(elev.Config.DoorOpenDuration_s, "door")
 		} else {
 			if btnType != elevio.BT_Nil {
 				elev.Requests[btnFloor][btnType] = true
@@ -41,8 +41,10 @@ func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elev
 		if btnType != elevio.BT_Nil {
 			elev.Requests[btnFloor][btnType] = true
 		}
-
+		fmt.Print("Elevator fsm Idle before choose; 44")
 		output := Requests_chooseDirection(elev)
+		fmt.Print("Elevator fsm Idle after choose", output)
+
 		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour
 
@@ -50,7 +52,7 @@ func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elev
 		case EB_DoorOpen:
 			//elevio.SetDoorOpenLamp(true)
 			SetDoorCh <- true
-			TimerStart(elev.Config.DoorOpenDuration_s,"door")
+			TimerStart(elev.Config.DoorOpenDuration_s, "door")
 			fmt.Println("DoorOpen start timer on req button press, 54")
 			fmt.Println("Behaviour: fsm 55, ", elev.Behaviour)
 			elev = ClearRequestsAtCurrentFloor(elev, requestDone)
@@ -78,7 +80,7 @@ func FsmOnFloorArrival(newFloor int, elev *Elevator, requestDone chan<- elevio.B
 			//elevio.SetDoorOpenLamp(true)
 			SetDoorCh <- true
 			elev = ClearRequestsAtCurrentFloor(elev, requestDone)
-			TimerStart(elev.Config.DoorOpenDuration_s,"door")
+			TimerStart(elev.Config.DoorOpenDuration_s, "door")
 			//setAllLights(elev) //TODO
 			elev.Behaviour = EB_DoorOpen
 		}
@@ -93,7 +95,7 @@ func FsmOnDoorTimeout(elev *Elevator, requestDoneCh chan<- elevio.ButtonEvent, M
 	elev.Behaviour = output.Behaviour
 	switch elev.Behaviour {
 	case EB_DoorOpen:
-		TimerStart(elev.Config.DoorOpenDuration_s,"door")
+		TimerStart(elev.Config.DoorOpenDuration_s, "door")
 		elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 		//setAllLights(elev) //TODO
 	case EB_Moving, EB_Idle:
