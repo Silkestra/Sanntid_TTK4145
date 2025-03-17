@@ -70,6 +70,10 @@ func Direction_toString(dirn elevio.MotorDirection) string {
 func Elevator_uninitialized() *Elevator {
 	conf := Config{ClearRequestVariant: CV_InDirn, DoorOpenDuration_s: 3}
 	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf}
+	ObstructionActive = false
+	p.Available = true
+	TimerStart(p.Config.DoorOpenDuration_s, "door")
+	//TimerStart(p.Config.DoorOpenDuration_s, "available")
 	if p.Floor == -1 {
 		elevio.SetMotorDirection(elevio.MD_Up)
 		for {

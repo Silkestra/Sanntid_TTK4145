@@ -1,0 +1,6 @@
+panic: runtime error: index out of range [2] with length 1
+
+goroutine 1 [running]:
+main.main()
+	/home/student/Documents/AJE/Sanntid_TTK4145/main.go:72 +0x885
+exit status 2

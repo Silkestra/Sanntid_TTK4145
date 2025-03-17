@@ -70,6 +70,7 @@ func main() {
 
 	numFloors := 4
 	port := os.Args[2]
+
 	elevio.Init("localhost:"+port, numFloors) //"localhost:15657"
 	fmt.Printf("elevio inited")
 
@@ -81,7 +82,7 @@ func main() {
 
 	//Single elevator
 	setDoorCh := make(chan bool)                         // channel for setting door state
-	requestDoneCh := make(chan elevio.ButtonEvent)    // channel for signaling when request is done
+	requestDoneCh := make(chan elevio.ButtonEvent)       // channel for signaling when request is done
 	motorDirectionCh := make(chan elevio.MotorDirection) // channel for motor direction
 	stopLampCh := make(chan bool)                        //setting stoplamp
 	requestForLightsCh := make(chan [4][3]bool)
@@ -121,6 +122,7 @@ func main() {
 	fmt.Printf("hardware inited")
 
 	var world = worldview.InitWorldview(*elev, ID)
+
 	fmt.Printf("world inited")
 
 	go elevio.Elevator_io_run(motorDirectionCh,

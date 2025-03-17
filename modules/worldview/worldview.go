@@ -28,25 +28,27 @@ type Worldview struct {
 
 func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 	num, err := strconv.Atoi(id)
+	fmt.Println("worldview31")
 	if err != nil {
 		fmt.Errorf("invalid ID, must be an integer: %v", err)
 	}
-
+	fmt.Println("worldview35")
 	if num < 0 || num >= len([3]single_elevator.Elevator{}) {
 		fmt.Errorf("ID %d is out of valid range [0,2]", num)
 	}
-
+	fmt.Println("worldview39")
 	world := &Worldview{
 		ID: num,
 	}
-
+	fmt.Println("worldview43")
 	world.Elevators[num] = elev
-
+	fmt.Println("worldview45")
 	for i := range world.Elevators {
 		if i != num {
 			world.Elevators[i].Behaviour = single_elevator.EB_Disconnected
 		}
 	}
+	fmt.Println("worldview51")
 
 	for i := range world.OrderBooks {
 		for j := range world.OrderBooks[i] {
@@ -55,6 +57,7 @@ func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 			}
 		}
 	}
+	fmt.Println("worldview60")
 
 	for i := range world.CabOrderBooks {
 		for j := range world.CabOrderBooks[i] {
@@ -63,7 +66,7 @@ func InitWorldview(elev single_elevator.Elevator, id string) *Worldview {
 			}
 		}
 	}
-
+	fmt.Println("worldview69")
 	return world
 }
 
@@ -214,7 +217,7 @@ func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
 		if err != nil {
 			fmt.Errorf("invalid ID, must be an integer: %v", err)
 		}
-		if num < 3 && num > 0 {
+		if num <= 3 && num >= 0 {
 			myWorld.Elevators[num].Behaviour = single_elevator.EB_Disconnected
 
 		}
