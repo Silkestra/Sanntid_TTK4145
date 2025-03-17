@@ -1,7 +1,8 @@
 package hallassigner
 
 import (
-	"Driver-go/modules/single_elevator"
+	"Driver-go/modules/config"
+	"Driver-go/modules/singleElevator"
 	"Driver-go/modules/worldview"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
-type Elevator = single_elevator.Elevator
+type Elevator = singleElevator.Elevator
 
 type HRAElevState struct {
 	Behavior    string `json:"behaviour"`
@@ -22,25 +23,21 @@ type HRAElevState struct {
 }
 
 type HRAInput struct {
-	HallRequests [][2]bool               `json:"hallRequests"`
-	States       map[string]HRAElevState `json:"states"`
+	HallRequests [][config.N_hall_buttons]bool `json:"hallRequests"`
+	States       map[string]HRAElevState       `json:"states"`
 }
 
 func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	switch elev.Behaviour {
-	case single_elevator.EB_Idle, single_elevator.EB_Moving, single_elevator.EB_DoorOpen:
-		/* var elev_cab []bool
-		for i := 0; i < 4; i++ {
-			elev_cab = append(elev_cab, elev.Requests[i][2])
-		} */
+	case config.EB_Idle, config.EB_Moving, config.EB_DoorOpen:
 		return HRAElevState{
-			Behavior:    single_elevator.Eb_toString(elev.Behaviour),
+			Behavior:    singleElevator.EbToString(elev.Behaviour),
 			Floor:       elev.Floor,
-			Direction:   single_elevator.Direction_toString(elev.Dirn),
+			Direction:   singleElevator.DirectionToString(elev.Dirn),
 			CabRequests: worldview.MakeCabRequests(world),
 		}
 
-	case single_elevator.EB_Disconnected:
+	case config.EB_Disconnected:
 		return HRAElevState{}
 	default:
 		return HRAElevState{}
@@ -48,17 +45,13 @@ func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 }
 
 func FillHRAInput(world worldview.Worldview) HRAInput {
-	fmt.Println("world:", world)
 	states := make(map[string]HRAElevState)
 	for key, elev := range world.Elevators {
 		elev_state := FillHRAElevState(elev, world)
-		if !isEmptyHRAElevState(elev_state) && !(elev.Behaviour == single_elevator.EB_Disconnected || (!elev.Available && key != world.ID)) {
+		if !isEmptyHRAElevState(elev_state) && !(elev.Behaviour == config.EB_Disconnected || (!elev.Available && key != world.ID)) {
 			states[strconv.Itoa(key)] = elev_state
 		}
 	}
-	//fmt.Println("hrainput: ", states)
-	//fmt.Println("makehallrequest: ", worldview.MakeHallRequests(world))
-
 	return HRAInput{
 		HallRequests: worldview.MakeHallRequests(world), //fetch from orderBook, fetch all U and B
 		States:       states,
@@ -69,7 +62,7 @@ func isEmptyHRAElevState(state HRAElevState) bool {
 	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
 
-func HallAssigner(world worldview.Worldview) map[string][][2]bool {
+func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons]bool {
 	hraExecutable := ""
 	switch runtime.GOOS {
 	case "linux":
@@ -81,7 +74,6 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 	}
 
 	input := FillHRAInput(world)
-	fmt.Println("This input to hallarbritration: ", input)
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
@@ -96,7 +88,7 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 
 	}
 
-	output := new(map[string][][2]bool)
+	output := new(map[string][][config.N_hall_buttons]bool)
 	err = json.Unmarshal(ret, &output)
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)
@@ -112,9 +104,9 @@ func HallAssigner(world worldview.Worldview) map[string][][2]bool {
 
 }
 
-func HallassignerToElevRequest(hallmap map[string][][2]bool, id string) [4][2]bool {
+func HallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool, id string) [config.N_floor_const][config.N_hall_buttons]bool {
 	orders := hallmap[id]
-	var requests [4][2]bool
+	var requests [config.N_floor_const][config.N_hall_buttons]bool
 	for i, ordersOnFloor := range orders {
 		requests[i][0] = ordersOnFloor[0]
 		requests[i][1] = ordersOnFloor[1]
@@ -122,13 +114,13 @@ func HallassignerToElevRequest(hallmap map[string][][2]bool, id string) [4][2]bo
 	return requests
 }
 
-func HallArbitration_Run(worldViewToArbitration <-chan worldview.Worldview,
-	hallRequestToElevator chan<- [4][2]bool,
+func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
+	hallRequestToElevatorCh chan<- [config.N_floor_const][config.N_hall_buttons]bool,
 	ID string) { //recives wolrdviev and outputs to elevator
 	for {
 		select {
-		case a := <-worldViewToArbitration:
-			hallRequestToElevator <- HallassignerToElevRequest(HallAssigner(a), ID)
+		case worldToArbitration := <-worldViewToArbitrationCh:
+			hallRequestToElevatorCh <- HallassignerToElevRequest(HallAssigner(worldToArbitration), ID)
 		}
 	}
 }

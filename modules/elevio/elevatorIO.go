@@ -1,50 +1,22 @@
 package elevio
 
 import (
+	"Driver-go/modules/config"
 	"fmt"
 	"net"
 	"sync"
 	"time"
 )
 
-const _pollRate = 20 * time.Millisecond
-const N_floor_const int = 4
-const N_buttons_const int = 3
-
 var _initialized bool = false
-var N_FLOORS int = N_floor_const //navn endret fra _numFloors
-var N_BUTTONS int = N_buttons_const
 var _mtx sync.Mutex
 var _conn net.Conn
 
-type MotorDirection int
-
-const (
-	MD_Up   MotorDirection = 1
-	MD_Down                = -1
-	MD_Stop                = 0
-)
-
-type ButtonType int
-
-const (
-	BT_HallUp   ButtonType = 0
-	BT_HallDown            = 1
-	BT_Cab                 = 2
-	BT_Nil                 = 3
-)
-
-type ButtonEvent struct {
-	Floor  int
-	Button ButtonType
-}
-
-func Init(addr string, numFloors int) {
+func Init(addr string) {
 	if _initialized {
 		fmt.Println("Driver already initialized!")
 		return
 	}
-	N_FLOORS = numFloors
 	_mtx = sync.Mutex{}
 	var err error
 	_conn, err = net.Dial("tcp", addr)
@@ -52,18 +24,44 @@ func Init(addr string, numFloors int) {
 		panic(err.Error())
 	}
 	_initialized = true
-	var zeros [4][3]bool
+	var zeros [config.N_floor_const][config.N_buttons_const]bool
 	setAllLights(zeros)
 	SetStopLamp(false)
 	SetDoorOpenLamp(false)
 
 }
 
-func SetMotorDirection(dir MotorDirection) {
+func HardWareInit(drvButtons chan<- config.ButtonEvent,
+	drvFloors chan<- int,
+	drvObstr chan<- bool,
+	drvStop chan<- bool,
+	drvTimeout chan<- bool,
+	drvTimeoutAvailable chan<- bool) int {
+	floor := GetFloor()
+	if floor == -1 {
+		SetMotorDirection(config.MD_Up)
+		for {
+			floor = GetFloor()
+			if floor != -1 {
+				SetMotorDirection(config.MD_Stop)
+				break
+			}
+		}
+	}
+
+	go PollButtons(drvButtons)
+	go PollFloorSensor(drvFloors)
+	go PollObstructionSwitch(drvObstr)
+	go PollStopButton(drvStop)
+
+	return floor
+}
+
+func SetMotorDirection(dir config.MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})
 }
 
-func SetButtonLamp(button ButtonType, floor int, value bool) {
+func SetButtonLamp(button config.ButtonType, floor int, value bool) {
 	write([4]byte{2, byte(button), byte(floor), toByte(value)})
 }
 
@@ -79,17 +77,16 @@ func SetStopLamp(value bool) {
 	write([4]byte{5, toByte(value), 0, 0})
 }
 
-func PollButtons(receiver chan<- ButtonEvent) {
-	prev := make([][3]bool, N_FLOORS)
+func PollButtons(receiver chan<- config.ButtonEvent) {
+	prev := make([][3]bool, config.N_floor_const)
 	for {
-		time.Sleep(_pollRate)
-		for f := 0; f < N_FLOORS; f++ {
-			for b := ButtonType(0); b < 3; b++ {
+		time.Sleep(config.PollRate)
+		for f := 0; f < config.N_floor_const; f++ {
+			for b := config.ButtonType(0); b < config.ButtonType(config.N_buttons_const); b++ {
 				v := GetButton(b, f)
 				if v != prev[f][b] && v != false {
 					fmt.Println("Poll buttons, elevio:", v)
-					receiver <- ButtonEvent{f, ButtonType(b)}
-
+					receiver <- config.ButtonEvent{Floor: f, Button: config.ButtonType(b)}
 				}
 				prev[f][b] = v
 
@@ -101,7 +98,7 @@ func PollButtons(receiver chan<- ButtonEvent) {
 func PollFloorSensor(receiver chan<- int) {
 	prev := -1
 	for {
-		time.Sleep(_pollRate)
+		time.Sleep(config.PollRate)
 		v := GetFloor()
 		if v != prev && v != -1 {
 			receiver <- v
@@ -113,7 +110,7 @@ func PollFloorSensor(receiver chan<- int) {
 func PollStopButton(receiver chan<- bool) {
 	prev := false
 	for {
-		time.Sleep(_pollRate)
+		time.Sleep(config.PollRate)
 		v := GetStop()
 		if v != prev {
 			receiver <- v
@@ -125,7 +122,7 @@ func PollStopButton(receiver chan<- bool) {
 func PollObstructionSwitch(receiver chan<- bool) {
 	prev := false
 	for {
-		time.Sleep(_pollRate)
+		time.Sleep(config.PollRate)
 		v := GetObstruction()
 		if v != prev {
 			receiver <- v
@@ -134,7 +131,7 @@ func PollObstructionSwitch(receiver chan<- bool) {
 	}
 }
 
-func GetButton(button ButtonType, floor int) bool {
+func GetButton(button config.ButtonType, floor int) bool {
 	a := read([4]byte{6, byte(button), byte(floor), 0})
 	return toBool(a[1])
 }
@@ -202,32 +199,32 @@ func toBool(a byte) bool {
 	return b
 }
 
-func setAllLights(HallAndCabReq [4][3]bool) {
-	for floor := 0; floor < N_FLOORS; floor++ {
-		for btn := 0; btn < N_BUTTONS; btn++ {
+func setAllLights(HallAndCabReq [config.N_floor_const][config.N_buttons_const]bool) {
+	for floor := 0; floor < config.N_floor_const; floor++ {
+		for btn := 0; btn < config.N_buttons_const; btn++ {
 
-			SetButtonLamp(ButtonType(btn), floor, HallAndCabReq[floor][btn])
+			SetButtonLamp(config.ButtonType(btn), floor, HallAndCabReq[floor][btn])
 		}
 	}
 }
 
-func Elevator_io_run(motorDirection <-chan MotorDirection,
+func ElevatorIORun(motorDirectionCh <-chan config.MotorDirection,
 	setDoorCh <-chan bool,
-	floorIndicatorCh <-chan int,
+	drvFloors <-chan int,
 	stopLampCh <-chan bool,
-	requestForLightsCh <-chan [4][3]bool) {
+	requestForLightsCh <-chan [config.N_floor_const][config.N_buttons_const]bool) {
 	for {
 		select {
-		case a := <-motorDirection:
-			SetMotorDirection(a)
-		case a := <-setDoorCh:
-			SetDoorOpenLamp(a)
-		case a := <-floorIndicatorCh:
-			SetFloorIndicator(a)
-		case a := <-stopLampCh:
-			SetStopLamp(a)
-		case a := <-requestForLightsCh:
-			setAllLights(a)
+		case motorDirn := <-motorDirectionCh:
+			SetMotorDirection(motorDirn)
+		case doorOpen := <-setDoorCh:
+			SetDoorOpenLamp(doorOpen)
+		case floor := <-drvFloors:
+			SetFloorIndicator(floor)
+		case stopLamp := <-stopLampCh:
+			SetStopLamp(stopLamp)
+		case requests := <-requestForLightsCh:
+			setAllLights(requests)
 		}
 	}
 
