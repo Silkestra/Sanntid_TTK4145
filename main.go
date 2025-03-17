@@ -30,7 +30,7 @@ func HardWareInit(drv_buttons chan<- elevio.ButtonEvent,
 	go elevio.PollFloorSensor(drv_floors)
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
-	go single_elevator.PollTimeout(drv_timeout)
+	go single_elevator.PollTimeout(drv_timeout, *elev)
 	go single_elevator.PollAvailableTimeout(drv_timeout_Available, elev)
 }
 

@@ -113,33 +113,6 @@ func CombineHallAndCabReq(myWorld Worldview) [4][3]bool {
 	return combined
 }
 
-//Ta imot newWorldview over kanal, sette inn den heisen den har mottat worlview fra inn i mitt worldview av den heisen
-
-/* func UpdateMyWorldview(myWorld Worldview, newWorld Worldview) Worldview {
-	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
-	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
-
-	for j := 0; j < 4; j++ {
-		for k := 0; k < 2; k++ {
-			allUnconfirmed := true
-
-			for i := 0; i < 3; i++ {
-				if myWorld.OrderBooks[i][j][k] != Unconfirmed {
-					allUnconfirmed = false
-					break
-				}
-			}
-			if allUnconfirmed {
-				for i := 0; i < 3; i++ {
-					myWorld.OrderBooks[i][j][k] = Confirmed
-				}
-			}
-		}
-	}
-	return myWorld
-}
-*/
-
 func UpdateMyElevator(newestElev single_elevator.Elevator, myWorld *Worldview) {
 	myWorld.Elevators[myWorld.ID] = newestElev
 }
@@ -160,26 +133,7 @@ func DoneInOrderBook(myWorld *Worldview, requestDoneCh elevio.ButtonEvent) {
 	floor := requestDoneCh.Floor
 	button := int(requestDoneCh.Button)
 	fmt.Println("Doneinorderbook, worldview 159 floor and button", floor, button)
-	// var lost []int
-	// for i, elev := range myWorld.Elevators {
-	// 	if elev.Behaviour == single_elevator.EB_Disconnected {
-	// 		lost = append(lost, i)
-	// 	}
-	// }
-	// fmt.Println("elevators lost in doneinordferbook 166: ", lost)
 
-	// if button == elevio.BT_Cab {
-	// 	tick := 0
-	// 	for tick != 3-len(lost) {
-	// 		tick = 0
-	// 		for i := 0; i < 3; i++ {
-	// 			if !slices.Contains(lost, i) && myWorld.CabOrderBooks[myWorld.ID][i][floor] == Confirmed {
-	// 				tick += 1
-	// 			}
-	// 		}
-	// 	}
-	// 	myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][floor] = Done
-	// 	fmt.Println("Cab order cleared, worldview 159")
 	if button == elevio.BT_Cab {
 		myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][floor] = Done
 		fmt.Println("Cab order cleared, worldview 159")
@@ -224,18 +178,7 @@ func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
 	}
 }
 
-func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
-	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
-	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
-	myWorld.CabOrderBooks[newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID]
-	myWorld.CabOrderBooks[myWorld.ID][newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID][newWorld.ID]
-	var lost []int
-	for i, elev := range myWorld.Elevators {
-		if elev.Behaviour == single_elevator.EB_Disconnected {
-			lost = append(lost, i)
-		}
-	}
-	//Orderbook cylic counter
+func CyclicCounterOrderBook(myWorld Worldview, newWorld Worldview, lost []int) Worldview {
 	for j := 0; j < 4; j++ {
 		for k := 0; k < 2; k++ {
 
@@ -291,7 +234,10 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 			}
 		}
 	}
-	//Caborderbook cylic counter
+	return myWorld
+}
+
+func CyclicCounterCabOrderBook(myWorld Worldview, newWorld Worldview, lost []int) Worldview {
 	for k := 0; k < 4; k++ {
 		switch myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k] {
 
@@ -345,6 +291,26 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 			fmt.Println("Unknown state encountered")
 		}
 	}
+	return myWorld
+}
+
+func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
+	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
+	myWorld.OrderBooks[newWorld.ID] = newWorld.OrderBooks[newWorld.ID]
+	myWorld.CabOrderBooks[newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID]
+	myWorld.CabOrderBooks[myWorld.ID][newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID][newWorld.ID]
+
+	var lost []int
+	for i, elev := range myWorld.Elevators {
+		if elev.Behaviour == single_elevator.EB_Disconnected {
+			lost = append(lost, i)
+		}
+	}
+	//Orderbook cylic counter
+	myWorld = CyclicCounterOrderBook(myWorld, newWorld, lost)
+	//Caborderbook cylic counter
+	myWorld = CyclicCounterCabOrderBook(myWorld, newWorld, lost)
+
 	return myWorld
 }
 

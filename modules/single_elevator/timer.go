@@ -37,11 +37,11 @@ func TimerStop(timerType string) {
 }
 
 // Check if the timer has timed out
-func TimerTimedOut() bool {
+func TimerTimedOut(elev Elevator) bool {
 	//fmt.Println(timerActive, time.Now().After(timerEndTime))
-	return timerActive && time.Now().After(timerEndTime) && !ObstructionActive
+	return timerActive && time.Now().After(timerEndTime) && !elev.ObstructionActive
 }
-func TimerTimedOutAvailable(elev Elevator) bool {
+func TimerTimedOutAvailable(elev *Elevator) bool {
 	//fmt.Println(timerActive, time.Now().After(timerEndTime))
 	active_requests := false
 	for i := 0; i < 4; i++ {
@@ -59,7 +59,7 @@ func PollAvailableTimeout(receiver chan<- bool, elev *Elevator) {
 	prev := false
 	for {
 		time.Sleep(_pollRate)
-		v := TimerTimedOutAvailable(*elev)
+		v := TimerTimedOutAvailable(elev)
 		if v != prev {
 			TimerStop("available")
 			receiver <- v
@@ -68,11 +68,11 @@ func PollAvailableTimeout(receiver chan<- bool, elev *Elevator) {
 	}
 }
 
-func PollTimeout(receiver chan<- bool) {
+func PollTimeout(receiver chan<- bool, elev Elevator) {
 	prev := false
 	for {
 		time.Sleep(_pollRate)
-		v := TimerTimedOut()
+		v := TimerTimedOut(elev)
 		if v != prev {
 			TimerStop("door")
 			receiver <- v

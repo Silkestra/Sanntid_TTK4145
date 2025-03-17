@@ -15,8 +15,6 @@ const (
 	EB_Disconnected
 )
 
-var ObstructionActive bool
-
 type ClearRequestVariant int
 
 const (
@@ -28,10 +26,11 @@ type Elevator struct {
 	Floor int
 	Dirn  elevio.MotorDirection
 	//Requests [elevio.N_FLOORS][elevio.N_BUTTONS]int
-	Requests  [4][3]bool
-	Behaviour ElevatorBehaviour
-	Config    Config
-	Available bool
+	Requests          [4][3]bool
+	Behaviour         ElevatorBehaviour
+	Config            Config
+	Available         bool
+	ObstructionActive bool
 }
 
 type Config struct {
@@ -69,11 +68,8 @@ func Direction_toString(dirn elevio.MotorDirection) string {
 
 func Elevator_uninitialized() *Elevator {
 	conf := Config{ClearRequestVariant: CV_InDirn, DoorOpenDuration_s: 3}
-	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, Config: conf}
-	ObstructionActive = false
-	p.Available = true
+	p := Elevator{Floor: elevio.GetFloor(), Dirn: elevio.MD_Stop, Behaviour: EB_Idle, ObstructionActive: false, Available: true, Config: conf}
 	TimerStart(p.Config.DoorOpenDuration_s, "door")
-	//TimerStart(p.Config.DoorOpenDuration_s, "available")
 	if p.Floor == -1 {
 		elevio.SetMotorDirection(elevio.MD_Up)
 		for {
@@ -118,15 +114,6 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 				TimerStart(elev.Config.DoorOpenDuration_s, "available")
 			}
 
-		/* case a := <-drv_buttons:
-		if ((elev.Behaviour == EB_DoorOpen) || (elev.Behaviour == EB_Idle) || (elev.Behaviour == EB_Moving)) && ((a.Button == elevio.BT_HallUp) || (a.Button == elevio.BT_HallDown)) {
-			localHallRequestChan <- a //cend the hallcall to worldview
-			continue
-		}
-		FsmOnRequestButtonPress(a.Floor, a.Button, elev, setDoorCh, requestDoneCh, motorDirectionCh) // Fsm should only be called of button presses when CABcall or when disconnected
-		fmt.Printf("%+v\n", a)
-		elevToWorld <- *elev */
-
 		case cabRequest := <-cabChan:
 			for i := 0; i < 4; i++ {
 				elev.Requests[i][2] = cabRequest[i]
@@ -147,13 +134,13 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 		case a := <-drv_obstr:
 			fmt.Printf("%+v\n", a)
 			if elev.Behaviour == EB_DoorOpen {
-				ObstructionActive = a
-				fmt.Println("obs:-", ObstructionActive)
+				elev.ObstructionActive = a
+				fmt.Println("obs:-", elev.ObstructionActive)
 			}
 			if !a {
 				TimerStart(elev.Config.DoorOpenDuration_s, "door")
 			}
-			fmt.Println("obs:-", ObstructionActive)
+			fmt.Println("obs:-", elev.ObstructionActive)
 			elevToWorld <- *elev
 
 		case a := <-drv_stop:
@@ -164,7 +151,7 @@ func Single_Elevator_Run(reqChan <-chan [4][2]bool, //new request recived from h
 			os.Exit(0)
 
 		case a := <-drv_timeout:
-			if !ObstructionActive { //Ignore timeout if obstruction is active
+			if !elev.ObstructionActive { //Ignore timeout if obstruction is active
 				fmt.Printf("%+v\n", a)
 				FsmOnDoorTimeout(elev, requestDoneCh, motorDirectionCh, setDoorCh)
 				elevToWorld <- *elev

@@ -5,17 +5,6 @@ import (
 	"fmt"
 )
 
-// func init() {
-// 	elev = Elevator{
-// 		Floor:     -1,
-// 		Dirn:      0,
-// 		Behaviour: 0,
-// 		Config: ElevatorConfig{
-
-// 			DoorOpenDuration_s: float64(3 * time.Second) / float64(time.Second),
-// 		},
-// 	}
-// }
 
 // TODO: Change name according to funcionality
 func FsmOnRequestButtonPress(btnFloor int, btnType elevio.ButtonType, elev *Elevator, SetDoorCh chan<- bool, requestDone chan<- elevio.ButtonEvent, MotorDirectionCh chan<- elevio.MotorDirection) {
