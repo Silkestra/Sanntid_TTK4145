@@ -86,19 +86,16 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 			TimerStart(elev.Config.DoorOpenDuration_s, "available") //start availible check
 
 		case obstruction := <-drvObstr:
-			fmt.Printf("%+v\n", obstruction)
-			if elev.Behaviour == config.EB_DoorOpen {
-				elev.ObstructionActive = obstruction
-				fmt.Println("obs:-", elev.ObstructionActive)
-			}
+			elev.ObstructionActive = obstruction
+
 			if !obstruction {
 				TimerStart(elev.Config.DoorOpenDuration_s, "door")
 			}
 			fmt.Println("obs:-", elev.ObstructionActive)
 			updatedLocalElevatorCh <- *elev
 
-		case stop := <-drvStop:
-			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh", "%+v\n", stop)
+		case <-drvStop:
+			fmt.Println("help......help.......help.......mayday....mayday...your.....teaching.....them....to...solve....the...synchronization.....problem.....with......atom....errrrrr.....arghhhh")
 			stopLampCh <- true
 			motorDirectionCh <- config.MD_Stop
 			close(drvButtons)

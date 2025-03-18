@@ -65,7 +65,7 @@ func main() {
 	fmt.Printf("elevator inited")
 
 	//Worldview
-	worldviewToCabCh := make(chan []bool, 1)             // Read-only channel for local hall request events
+	worldviewToCabCh := make(chan []bool, 1024)          // Read-only channel for local hall request events
 	updatedLocalElevatorCh := make(chan config.Elevator) // Read-only channel for updates on local elevator
 
 	var world = worldview.InitWorldview(*elev, ID)

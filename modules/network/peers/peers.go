@@ -1,6 +1,7 @@
 package peers
 
 import (
+	"Driver-go/modules/config"
 	"Driver-go/modules/network/conn"
 	"fmt"
 	"net"
@@ -14,9 +15,6 @@ type PeerUpdate struct {
 	Lost  []string
 }
 
-const interval = 15 * time.Millisecond
-const timeout = 500 * time.Millisecond
-
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
 
 	conn := conn.DialBroadcastUDP(port)
@@ -26,7 +24,7 @@ func Transmitter(port int, id string, transmitEnable <-chan bool) {
 	for {
 		select {
 		case enable = <-transmitEnable:
-		case <-time.After(interval):
+		case <-time.After(config.Interval):
 		}
 		if enable {
 			conn.WriteTo([]byte(id), addr)
@@ -45,7 +43,7 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 	for {
 		updated := false
 
-		conn.SetReadDeadline(time.Now().Add(interval))
+		conn.SetReadDeadline(time.Now().Add(config.Interval))
 		n, _, _ := conn.ReadFrom(buf[0:])
 
 		id := string(buf[:n])
@@ -64,7 +62,7 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 		// Removing dead connection
 		p.Lost = make([]string, 0)
 		for k, v := range lastSeen {
-			if time.Now().Sub(v) > timeout {
+			if time.Now().Sub(v) > config.Timeout {
 				updated = true
 				p.Lost = append(p.Lost, k)
 				delete(lastSeen, k)
