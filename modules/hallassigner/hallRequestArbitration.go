@@ -115,6 +115,7 @@ func HallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool,
 	return requests
 }
 
+//unødvendig med en modul som kun har en input og en output -> gjør ingenting 
 // Handles hallarbitration logic in main-loop. Receives worldview-struct and returns assigned requests to elevator-module. Is ran as a goroutine.
 func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
 	hallRequestToElevatorCh chan<- [config.N_floor_const][config.N_hall_buttons]bool,

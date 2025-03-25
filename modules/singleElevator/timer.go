@@ -40,8 +40,8 @@ func TimerTimedOutDoor(elev Elevator) bool {
 	return timerActiveDoor && time.Now().After(timerEndTimeDoor) && !elev.ObstructionActive
 }
 
-// Check if the elevator available timer has timed out 
-func TimerTimedOutAvailable(elev *Elevator) bool {
+// Check if the elevator available timer has timed out
+func TimerTimedOutAvailable(elev Elevator) bool {
 	activeRequests := false
 	for i := 0; i < config.N_floor_const; i++ {
 		for j := 0; j < config.N_buttons_const; j++ {
@@ -58,7 +58,7 @@ func PollAvailableTimeout(receiver chan<- bool, elev *Elevator) {
 	prev := false
 	for {
 		time.Sleep(config.PollRate)
-		v := TimerTimedOutAvailable(elev)
+		v := TimerTimedOutAvailable(*elev)
 		if v != prev {
 			TimerStop("available")
 			receiver <- v

@@ -12,7 +12,7 @@ type DirnBehaviourPair struct {
 	Behaviour config.ElevatorBehaviour
 }
 
-func requestsAbove(e *Elevator) bool {
+func requestsAbove(e Elevator) bool {
 	for f := e.Floor + 1; f < config.N_floor_const; f++ {
 		for btn := 0; btn < config.N_buttons_const; btn++ {
 			if e.Requests[f][btn] {
@@ -23,7 +23,7 @@ func requestsAbove(e *Elevator) bool {
 	return false
 }
 
-func requestsBelow(e *Elevator) bool {
+func requestsBelow(e Elevator) bool {
 	for f := 0; f < e.Floor; f++ {
 		for btn := 0; btn < config.N_buttons_const; btn++ {
 			if e.Requests[f][btn] {
@@ -34,7 +34,7 @@ func requestsBelow(e *Elevator) bool {
 	return false
 }
 
-func requestsHere(e *Elevator) bool {
+func requestsHere(e Elevator) bool {
 	for btn := 0; btn < config.N_buttons_const; btn++ {
 		if e.Requests[e.Floor][btn] {
 			return true
@@ -43,7 +43,7 @@ func requestsHere(e *Elevator) bool {
 	return false
 }
 
-func RequestsChooseDirection(e *Elevator) DirnBehaviourPair {
+func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case config.MD_Up:
 		if requestsAbove(e) {
@@ -83,7 +83,7 @@ func RequestsChooseDirection(e *Elevator) DirnBehaviourPair {
 	}
 }
 
-func RequestsShouldStop(e *Elevator) bool {
+func RequestsShouldStop(e Elevator) bool {
 	switch e.Dirn {
 	case config.MD_Down:
 		if (e.Requests[e.Floor][config.BT_HallDown]) ||
@@ -110,44 +110,24 @@ func RequestsShouldStop(e *Elevator) bool {
 	}
 }
 
-func ClearRequestsAtCurrentFloor(e *Elevator, requestDone chan<- config.ButtonEvent) *Elevator {
-	switch e.Config.ClearRequestVariant {
-	case config.CV_All:
-		for btn := 0; btn < config.N_buttons_const; btn++ {
-			e.Requests[e.Floor][btn] = false
-			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.ButtonType(btn)}
-		}
 
-	case config.CV_InDirn:
-		e.Requests[e.Floor][config.BT_Cab] = false
-		fmt.Println(config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab})
-		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab}
+func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEvent) Elevator {
+	
+	e.Requests[e.Floor][config.BT_Cab] = false
+	fmt.Println(config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab})
+	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab}
 
-		switch e.Dirn {
-		case config.MD_Up:
-			// if !requestsAbove(e) && !e.Requests[e.Floor][config.BT_HallUp] {
-			// 	e.Requests[e.Floor][config.BT_HallDown] = false
-			// 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-			// }
-			e.Requests[e.Floor][config.BT_HallUp] = false
-			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
+	switch e.Dirn {
+	case config.MD_Up:
+		e.Requests[e.Floor][config.BT_HallUp] = false
+		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
 
-		case config.MD_Down:
-			// if !requestsBelow(e) && !e.Requests[e.Floor][config.BT_HallDown] {
-			// 	e.Requests[e.Floor][config.BT_HallUp] = false
-			// 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-			// }
-			e.Requests[e.Floor][config.BT_HallDown] = false
-			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
+	case config.MD_Down:
+		e.Requests[e.Floor][config.BT_HallDown] = false
+		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
 
-		case config.MD_Stop:
+	case config.MD_Stop:
 		default:
-			/* e.Requests[e.Floor][config.BT_HallUp] = false
-			e.Requests[e.Floor][config.BT_HallDown] = false
-			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
-			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown} */
-
 		}
-	}
 	return e
 }

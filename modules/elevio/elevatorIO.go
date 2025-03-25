@@ -32,13 +32,11 @@ func Init(addr string) {
 
 }
 
-// Initalizing elevator hardware in defined floor and starting go threads to interface with IO 
-func InitHardWare(drvButtons chan<- config.ButtonEvent,
-	drvFloors chan<- int,
-	drvObstr chan<- bool,
-	drvStop chan<- bool,
-	drvTimeout chan<- bool,
-	drvTimeoutAvailable chan<- bool) int {
+//kanskje denne funksjonene burde sløyfes, Anders sa dette med channelsene var opp til oss
+// men at han synes det er penere når man kun trenger å se det som er viktig
+//går fint at elevator kaller på elevio -> Hierakrisk
+// Initalizing elevator hardware in defined floor and starting go threads to interface with IO
+/* func InitHardWare(drvButtons chan<- config.ButtonEvent) int {
 	floor := GetFloor()
 	if floor == -1 {
 		SetMotorDirection(config.MD_Up)
@@ -50,15 +48,10 @@ func InitHardWare(drvButtons chan<- config.ButtonEvent,
 			}
 		}
 	}
-
 	go PollButtons(drvButtons)
-	go PollFloorSensor(drvFloors)
-	go PollObstructionSwitch(drvObstr)
-	go PollStopButton(drvStop)
-
 	return floor
 }
-
+*/
 func SetMotorDirection(dir config.MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})
 }
@@ -201,7 +194,7 @@ func toBool(a byte) bool {
 	return b
 }
 
-// Setting lights for all request network  
+// Setting lights for all request network
 func setAllLights(HallAndCabReq [config.N_floor_const][config.N_buttons_const]bool) {
 	for floor := 0; floor < config.N_floor_const; floor++ {
 		for btn := 0; btn < config.N_buttons_const; btn++ {

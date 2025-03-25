@@ -2,8 +2,8 @@ TTK4145 Elevator project
 ========================
 Implemented Peer-to-Peer system for several elevators. Uses go-channels to communicate between different modules. 
 All modules have a "run"-function that is ran as a goroutine.
----
-Modules: 
+
+**Modules**: 
     - Single Elevator:
         - Responsible for acting on a request matrix that contains requests that should be serviced by this elevator using logic defined in FSM and CabRequests
         - Heartbeat sent to backup program
@@ -24,15 +24,15 @@ Modules:
         - Cyclic counters is implemented to ensure sufficient consistency, to handle self-negation (flip-flop)
     - Backup:
         - responsible for launching main program in the event of a software crash 
----
-Possible Improvements: 
+
+**Possible Improvements**: 
     - Making all functions pure by not passing pointers as arguments to functions 
         - currenctly accepted using pointers because pointers are not passed between modules 
     - True modularity by not using fixed sized arrays (slices/maps instead)
         - currenctly solved by having a max-number of elevators defined in config-file 
     - Acceptance test for error handling (before Wordlview Merging for example)
----
-How to run:
+
+**How to run**:
 Should be ran using go 1.24 or newer. 
 
 Before running the main.go program, hallassigner should be compiled by utilizing this command in terminal:

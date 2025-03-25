@@ -47,24 +47,16 @@ const (
 	EB_Disconnected
 )
 
-type ClearRequestVariant int
-
-const (
-	CV_All ClearRequestVariant = iota
-	CV_InDirn
-)
-
 type Elevator struct {
 	Floor             int
 	Dirn              MotorDirection
 	Requests          [N_floor_const][N_buttons_const]bool 
 	Behaviour         ElevatorBehaviour
-	Config            Config
 	Available         bool
 	ObstructionActive bool
-}
-
-type Config struct {
-	ClearRequestVariant ClearRequestVariant
 	DoorOpenDuration_s  float64
 }
+
+
+
+// 
