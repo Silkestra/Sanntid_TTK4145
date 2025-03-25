@@ -12,6 +12,7 @@ var _initialized bool = false
 var _mtx sync.Mutex
 var _conn net.Conn
 
+// Initializing driver by establishing TCP connection to elevator, and turning of all lights
 func Init(addr string) {
 	if _initialized {
 		fmt.Println("Driver already initialized!")
@@ -31,7 +32,8 @@ func Init(addr string) {
 
 }
 
-func HardWareInit(drvButtons chan<- config.ButtonEvent,
+// Initalizing elevator hardware in defined floor and starting go threads to interface with IO 
+func InitHardWare(drvButtons chan<- config.ButtonEvent,
 	drvFloors chan<- int,
 	drvObstr chan<- bool,
 	drvStop chan<- bool,
@@ -199,6 +201,7 @@ func toBool(a byte) bool {
 	return b
 }
 
+// Setting lights for all request network  
 func setAllLights(HallAndCabReq [config.N_floor_const][config.N_buttons_const]bool) {
 	for floor := 0; floor < config.N_floor_const; floor++ {
 		for btn := 0; btn < config.N_buttons_const; btn++ {
@@ -208,6 +211,7 @@ func setAllLights(HallAndCabReq [config.N_floor_const][config.N_buttons_const]bo
 	}
 }
 
+// Controls elevator hardware in main-loop, through interaction with other modules. Is ran as a goroutine.
 func ElevatorIORun(motorDirectionCh <-chan config.MotorDirection,
 	setDoorCh <-chan bool,
 	drvFloors <-chan int,

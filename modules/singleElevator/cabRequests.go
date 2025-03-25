@@ -68,7 +68,6 @@ func RequestsChooseDirection(e *Elevator) DirnBehaviourPair {
 		}
 
 	case config.MD_Stop:
-		// Stop case: Arbitrary check for up or down first
 		if requestsHere(e) {
 			return DirnBehaviourPair{config.MD_Stop, config.EB_DoorOpen}
 		} else if requestsAbove(e) {
@@ -160,7 +159,7 @@ func ClearRequestsAtCurrentFloor(e *Elevator, requestDone chan<- config.ButtonEv
 			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
 
 		//case config.MD_Stop:
-		default: //waiting for both to arrive?
+		default: 
 			e.Requests[e.Floor][config.BT_HallUp] = false
 			e.Requests[e.Floor][config.BT_HallDown] = false
 			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}

@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"os"
 )
-
-func InitNetwork(peerUpdateCh chan peers.PeerUpdate, //init og runnework deles for å unngå go i go
+// Initializing network by fetching ID, and starting goroutines for UDP broadcast and peer tracking
+func InitNetwork(peerUpdateCh chan peers.PeerUpdate,
 	peerTxEnableCh chan bool,
 	transmittWorldviewCh chan worldview.Worldview,
-	recieveWorldviewCh chan worldview.Worldview) string { //network init function that inits tansmission and peer heartbeat check
+	recieveWorldviewCh chan worldview.Worldview) string { 
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()

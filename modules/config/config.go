@@ -14,6 +14,7 @@ const Door_open_time float64 = 3.0 //seconds
 const N_elevators int = 3
 const Interval = 15 * time.Millisecond
 const Timeout = 2000 * time.Millisecond
+const BackupEnable bool = false
 
 type ButtonType int
 
@@ -56,7 +57,7 @@ const (
 type Elevator struct {
 	Floor             int
 	Dirn              MotorDirection
-	Requests          [N_floor_const][N_buttons_const]bool
+	Requests          [N_floor_const][N_buttons_const]bool 
 	Behaviour         ElevatorBehaviour
 	Config            Config
 	Available         bool

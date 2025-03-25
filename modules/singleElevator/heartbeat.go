@@ -7,12 +7,11 @@ import (
 	"time"
 )
 
+// Launches backup program and transmitts heartbeat to backup module in main-loop. Ran as a goroutine.
 func HeartbeatToBackup(ID string, port string) {
-	//Create backup
 	cmd := exec.Command("gnome-terminal", "--", "go", "run", "./backup/backup.go", ID, port)
 	cmd.Run()
 
-	//Network conn
 	serverAddr, err := net.ResolveUDPAddr("udp", "localhost:800"+ID)
 	if err != nil {
 		fmt.Println("Error server address", err)
@@ -35,6 +34,5 @@ func HeartbeatToBackup(ID string, port string) {
 		} else {
 			fmt.Println("Data sent successfully")
 		}
-
 	}
 }

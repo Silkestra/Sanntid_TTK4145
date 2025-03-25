@@ -11,8 +11,6 @@ import (
 	"strconv"
 )
 
-// Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
-// This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
 type Elevator = singleElevator.Elevator
 
 type HRAElevState struct {
@@ -27,6 +25,7 @@ type HRAInput struct {
 	States       map[string]HRAElevState       `json:"states"`
 }
 
+// Converting from elevator and worlview type to HRAElevState type 
 func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	switch elev.Behaviour {
 	case config.EB_Idle, config.EB_Moving, config.EB_DoorOpen:
@@ -36,7 +35,6 @@ func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 			Direction:   singleElevator.DirectionToString(elev.Dirn),
 			CabRequests: worldview.MakeCabRequests(world),
 		}
-
 	case config.EB_Disconnected:
 		return HRAElevState{}
 	default:
@@ -44,6 +42,7 @@ func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	}
 }
 
+// Converting from worldview type to correct input-format for hallrequest assigner HRAInput
 func FillHRAInput(world worldview.Worldview) HRAInput {
 	states := make(map[string]HRAElevState)
 	for key, elev := range world.Elevators {
@@ -53,7 +52,7 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 		}
 	}
 	return HRAInput{
-		HallRequests: worldview.MakeHallRequests(world), //fetch from orderBook, fetch all U and B
+		HallRequests: worldview.MakeHallRequests(world), 
 		States:       states,
 	}
 }
@@ -62,6 +61,7 @@ func isEmptyHRAElevState(state HRAElevState) bool {
 	return state.Behavior == "" && state.Floor == 0 && state.Direction == "" && len(state.CabRequests) == 0
 }
 
+// Interacts with (gives input and returns output from) Hallassigner executable
 func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons]bool {
 	hraExecutable := ""
 	switch runtime.GOOS {
@@ -104,6 +104,7 @@ func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons
 
 }
 
+// Processess output from Hallassigner-function, returns requests for id
 func HallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool, id string) [config.N_floor_const][config.N_hall_buttons]bool {
 	orders := hallmap[id]
 	var requests [config.N_floor_const][config.N_hall_buttons]bool
@@ -114,9 +115,10 @@ func HallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool,
 	return requests
 }
 
+// Handles hallarbitration logic in main-loop. Receives worldview-struct and returns assigned requests to elevator-module. Is ran as a goroutine.
 func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
 	hallRequestToElevatorCh chan<- [config.N_floor_const][config.N_hall_buttons]bool,
-	ID string) { //recives wolrdviev and outputs to elevator
+	ID string) {
 	for {
 		select {
 		case worldToArbitration := <-worldViewToArbitrationCh:
