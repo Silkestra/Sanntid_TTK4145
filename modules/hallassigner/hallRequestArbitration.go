@@ -25,7 +25,7 @@ type HRAInput struct {
 	States       map[string]HRAElevState       `json:"states"`
 }
 
-// Converting from elevator and worlview type to HRAElevState type 
+// Converting from elevator and worlview type to HRAElevState type
 func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	switch elev.Behaviour {
 	case config.EB_Idle, config.EB_Moving, config.EB_DoorOpen:
@@ -52,7 +52,7 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 		}
 	}
 	return HRAInput{
-		HallRequests: worldview.MakeHallRequests(world), 
+		HallRequests: worldview.MakeHallRequests(world),
 		States:       states,
 	}
 }
@@ -94,11 +94,11 @@ func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons
 		fmt.Println("json.Unmarshal error: ", err)
 
 	}
-
+/* 
 	fmt.Printf("output: \n")
 	for k, v := range *output {
 		fmt.Printf("%6v :  %+v\n", k, v)
-	}
+	} */
 
 	return *output
 
@@ -115,7 +115,7 @@ func HallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool,
 	return requests
 }
 
-//unødvendig med en modul som kun har en input og en output -> gjør ingenting 
+// unødvendig med en modul som kun har en input og en output -> gjør ingenting
 // Handles hallarbitration logic in main-loop. Receives worldview-struct and returns assigned requests to elevator-module. Is ran as a goroutine.
 func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
 	hallRequestToElevatorCh chan<- [config.N_floor_const][config.N_hall_buttons]bool,

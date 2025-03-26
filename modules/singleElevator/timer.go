@@ -2,6 +2,7 @@ package singleElevator
 
 import (
 	"Driver-go/modules/config"
+	"fmt"
 	"time"
 )
 
@@ -22,6 +23,7 @@ func TimerStart(duration float64, timerType string) {
 	case "door":
 		timerEndTimeDoor = time.Now().Add(time.Duration(duration) * time.Second)
 		timerActiveDoor = true
+		fmt.Printf("timer start")
 	}
 }
 

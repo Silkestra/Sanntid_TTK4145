@@ -107,12 +107,13 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 				switch elev.Behaviour {
 				case config.EB_DoorOpen:
 					setDoorCh <- true
+					fmt.Printf("hall")
 					TimerStart(elev.DoorOpenDuration_s, "door")
-					elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
+					//elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 				case config.EB_Moving:
 					motorDirectionCh <- elev.Dirn
 				case config.EB_Idle:
-					TimerStart(elev.DoorOpenDuration_s, "available") //Starting available deadline
+					//TimerStart(elev.DoorOpenDuration_s, "available") //Starting available deadline
 				}
 			default:
 			}
@@ -128,26 +129,28 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 				switch elev.Behaviour {
 				case config.EB_DoorOpen:
 					setDoorCh <- true
+					fmt.Printf("cab")
 					TimerStart(elev.DoorOpenDuration_s, "door")
-					elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
+					// elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 				case config.EB_Moving:
 					motorDirectionCh <- elev.Dirn
 				case config.EB_Idle:
-					TimerStart(elev.DoorOpenDuration_s, "available") //Starting available deadline
+					// TimerStart(elev.DoorOpenDuration_s, "available") //Starting available deadline
 				}
 			default:
 			}
 
 		case floor := <-drvFloors:
-			//FsmOnFloorArrival(floor, elev, requestDoneCh, motorDirectionCh, setDoorCh)
+			// FsmOnFloorArrival(floor, elev, requestDoneCh, motorDirectionCh, setDoorCh)
 			elev.Floor = floor
 			elevio.SetFloorIndicator(elev.Floor)
 			switch elev.Behaviour {
 			case config.EB_Moving:
 				if RequestsShouldStop(elev) {
 					setDoorCh <- true
-					elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
+					// elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 					motorDirectionCh <- config.MotorDirection(0)
+					fmt.Printf("drvfloors")
 					TimerStart(elev.DoorOpenDuration_s, "door")
 					elev.Behaviour = config.EB_DoorOpen
 				}
@@ -158,6 +161,7 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 		case obstruction := <-drvObstr:
 			elev.ObstructionActive = obstruction
 			if !obstruction {
+				fmt.Printf("drvobst")
 				TimerStart(elev.DoorOpenDuration_s, "door")
 			}
 
@@ -174,13 +178,13 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 				elev.Behaviour = output.Behaviour
 				switch elev.Behaviour {
 				case config.EB_DoorOpen:
+					fmt.Printf("drvtimeoutdoor")
 					TimerStart(elev.DoorOpenDuration_s, "door")
 					elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 				case config.EB_Moving, config.EB_Idle:
 					setDoorCh <- false
 					motorDirectionCh <- elev.Dirn
 				}
-
 			}
 		case <-drvTimeoutAvailable:
 			elev.Available = false

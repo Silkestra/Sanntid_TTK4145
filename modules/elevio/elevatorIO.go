@@ -34,7 +34,7 @@ func Init(addr string) {
 
 //kanskje denne funksjonene burde sløyfes, Anders sa dette med channelsene var opp til oss
 // men at han synes det er penere når man kun trenger å se det som er viktig
-//går fint at elevator kaller på elevio -> Hierakrisk
+// går fint at elevator kaller på elevio -> Hierakrisk
 // Initalizing elevator hardware in defined floor and starting go threads to interface with IO
 /* func InitHardWare(drvButtons chan<- config.ButtonEvent) int {
 	floor := GetFloor()
@@ -52,6 +52,7 @@ func Init(addr string) {
 	return floor
 }
 */
+
 func SetMotorDirection(dir config.MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})
 }

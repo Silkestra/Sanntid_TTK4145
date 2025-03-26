@@ -110,9 +110,8 @@ func RequestsShouldStop(e Elevator) bool {
 	}
 }
 
-
 func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEvent) Elevator {
-	
+
 	e.Requests[e.Floor][config.BT_Cab] = false
 	fmt.Println(config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab})
 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab}
@@ -127,7 +126,11 @@ func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEve
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
 
 	case config.MD_Stop:
-		default:
-		}
+		e.Requests[e.Floor][config.BT_HallDown] = false
+		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
+		e.Requests[e.Floor][config.BT_HallUp] = false
+		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
+	default:
+	}
 	return e
 }

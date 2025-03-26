@@ -80,7 +80,7 @@ func setAllStatesUnknown(HallOrderBooks [config.N_elevators][config.N_floor_cons
 }
 
 // tydeligvis er denne overflødig, anders sa den ikke skulle trenge å være her desom system vårt var riktig implementert
-func (world *Worldview)RequestsShouldClearImmediately(btnFloor int, btnType config.ButtonType) bool {
+/* func (world *Worldview) RequestsShouldClearImmediately(btnFloor int, btnType config.ButtonType) bool {
 	shouldClear := false
 
 	for i, e := range world.Elevators {
@@ -102,7 +102,7 @@ func (world *Worldview)RequestsShouldClearImmediately(btnFloor int, btnType conf
 	}
 
 	return shouldClear
-}
+} */
 
 func matchesDirection(dirn config.MotorDirection, btnType config.ButtonType) bool {
 	return (dirn == config.MD_Up && btnType == config.BT_HallUp) ||
@@ -110,7 +110,6 @@ func matchesDirection(dirn config.MotorDirection, btnType config.ButtonType) boo
 		dirn == config.MD_Stop ||
 		btnType == config.BT_Cab
 }
-
 
 func MakeHallRequests(world Worldview) [][config.N_hall_buttons]bool {
 	output := make([][2]bool, len(world.HallOrderBooks[world.ID]))
@@ -152,21 +151,23 @@ func CombineHallAndCabReq(myWorld Worldview) [config.N_floor_const][config.N_but
 	return combined
 }
 
-func (myWorld *Worldview)UpdateMyElevator(newestElev Elevator) {
+func UpdateMyElevator(newestElev Elevator, myWorld Worldview) Worldview {
 	myWorld.Elevators[myWorld.ID] = newestElev
+	return myWorld
 }
 
 // Inserts orders in OrderBooks according to ButtonEvent as Unconfirmed
-func (myWorld *Worldview)InsertInOrderBook(btnpressed config.ButtonEvent) {
+func InsertInOrderBook(btnpressed config.ButtonEvent, myWorld Worldview) Worldview {
 	if btnpressed.Button == config.BT_HallUp || btnpressed.Button == config.BT_HallDown {
 		myWorld.HallOrderBooks[myWorld.ID][btnpressed.Floor][btnpressed.Button] = Unconfirmed
 	}
 	if btnpressed.Button == config.BT_Cab {
 		myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][btnpressed.Floor] = Unconfirmed
 	}
+	return myWorld
 }
 
-func (myWorld *Worldview)DoneInOrderBook(requestDoneCh config.ButtonEvent) {
+func DoneInOrderBook(requestDoneCh config.ButtonEvent, myWorld Worldview) Worldview {
 	floor := requestDoneCh.Floor
 	button := int(requestDoneCh.Button)
 
@@ -176,10 +177,11 @@ func (myWorld *Worldview)DoneInOrderBook(requestDoneCh config.ButtonEvent) {
 	} else {
 		myWorld.HallOrderBooks[myWorld.ID][floor][button] = Done
 	}
+	return myWorld
 }
 
 // Marks ids received as disconnected in own Worldview
-func (myWorld *Worldview)MarkAsDisconnected(peer_lost []string) {
+func MarkAsDisconnected(peer_lost []string, myWorld Worldview) Worldview {
 	for _, id := range peer_lost {
 		num, err := strconv.Atoi(id)
 		if err != nil {
@@ -189,6 +191,7 @@ func (myWorld *Worldview)MarkAsDisconnected(peer_lost []string) {
 			myWorld.Elevators[num].Behaviour = config.EB_Disconnected
 		}
 	}
+	return myWorld
 }
 
 // Transitions RequestStates in HallOrderBooks
@@ -340,29 +343,32 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 	worldviewToCabCh chan<- []bool, // Sends cabrequests to single elevator
 	id string) {
 
-
 	world := InitWorldview(id)
-	drvButton := make(chan config.ButtonEvent) 
+
+	drvButton := make(chan config.ButtonEvent)
 	go elevio.PollButtons(drvButton)
-	
+
 	ticker := time.NewTicker(time.Duration(config.N_send_myworld_rate) * time.Millisecond) // Rate of transmitting myworldview to network
 	defer ticker.Stop()
 	for {
 		select {
 
 		case peers := <-peerUpdateCh:
-			world.MarkAsDisconnected(peers.Lost)
+			world = MarkAsDisconnected(peers.Lost, world)
 
 		case elev := <-updatedLocalElevatorCh:
-			world.UpdateMyElevator(elev)
+			world = UpdateMyElevator(elev, world)
 			requestForLightsCh <- CombineHallAndCabReq(world)
 
 		case buttonEvent := <-drvButton:
-			if !world.RequestsShouldClearImmediately(buttonEvent.Floor, buttonEvent.Button) {
-				world.InsertInOrderBook(buttonEvent)
+			/* if !RequestsShouldClearImmediately(buttonEvent.Floor, buttonEvent.Button) {
+				world = InsertInOrderBook(buttonEvent, world)
 				requestForLightsCh <- CombineHallAndCabReq(world)
 				worldviewToCabCh <- MakeCabRequests(world)
-			}
+			} */
+			world = InsertInOrderBook(buttonEvent, world)
+			requestForLightsCh <- CombineHallAndCabReq(world)
+			worldviewToCabCh <- MakeCabRequests(world)
 
 		case receivedWorld := <-receiveWorldviewCh:
 			world = UpdateWorldview(world, receivedWorld)
@@ -370,7 +376,7 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 			worldviewToCabCh <- MakeCabRequests(world)
 
 		case buttonEvent := <-requestDoneCh:
-			world.DoneInOrderBook(buttonEvent)
+			world = DoneInOrderBook(buttonEvent, world)
 			requestForLightsCh <- CombineHallAndCabReq(world)
 
 		case <-ticker.C:
