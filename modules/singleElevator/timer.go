@@ -2,6 +2,7 @@ package singleElevator
 
 import (
 	"Driver-go/modules/config"
+	"fmt"
 	"time"
 )
 
@@ -20,6 +21,7 @@ func TimerStart(duration float64, timerType string) {
 		timerEndTimeAvailable = time.Now().Add(time.Duration(duration) * 3 * time.Second)
 		timerActiveAvailable = true
 	case "door":
+		fmt.Print("timer started at time, ", time.Now())
 		timerEndTimeDoor = time.Now().Add(time.Duration(duration) * time.Second)
 		timerActiveDoor = true
 	}
@@ -29,6 +31,7 @@ func TimerStart(duration float64, timerType string) {
 func TimerStop(timerType string) {
 	switch timerType {
 	case "door":
+		fmt.Print("timer stopped at time, ", time.Now())
 		timerActiveDoor = false
 	case "available":
 		timerActiveAvailable = false
@@ -37,7 +40,12 @@ func TimerStop(timerType string) {
 
 // Check if the door timer has timed out
 func TimerTimedOutDoor(elev Elevator) bool {
-	return timerActiveDoor && time.Now().After(timerEndTimeDoor) && !elev.ObstructionActive
+
+	if timerActiveDoor && time.Now().After(timerEndTimeDoor) && !elev.ObstructionActive {
+		timerActiveDoor = false
+		return true
+	}
+	return false
 }
 
 // Check if the elevator available timer has timed out
@@ -72,8 +80,11 @@ func PollDoorTimeout(receiver chan<- bool, elev Elevator) {
 	for {
 		time.Sleep(config.PollRate)
 		v := TimerTimedOutDoor(elev)
+
 		if v != prev {
 			TimerStop("door")
+			time.Sleep(4000 * time.Millisecond)
+			fmt.Println("doortimeout")
 			receiver <- v
 		}
 		prev = v

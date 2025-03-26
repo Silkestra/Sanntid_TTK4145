@@ -53,41 +53,42 @@ func FsmOnFloorArrival(newFloor int, elev Elevator, requestDone chan<- config.Bu
 }
 
 // Called every time the door times out, acts according to how FSM is defined for a single elevator
-func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
+/* func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
 	elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 	output := RequestsChooseDirection(elev)
 	elev.Dirn = output.Dirn
 	elev.Behaviour = output.Behaviour
 	switch elev.Behaviour {
 	case config.EB_DoorOpen:
-		fmt.Printf("doortimout")
+		fmt.Println("doortimout")
 		TimerStart(elev.DoorOpenDuration_s, "door")
-		elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
+		//elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 	case config.EB_Moving, config.EB_Idle:
 		SetDoorCh <- false
 		MotorDirectionCh <- elev.Dirn
 	}
 
 	return elev
-}
+} */
 
-/* func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
+func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
+	
 	switch elev.Behaviour {
 	case config.EB_DoorOpen:
 		elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 		output := RequestsChooseDirection(elev)
 		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour
+		fmt.Println(elev.Behaviour)
 		switch elev.Behaviour {
 		case config.EB_DoorOpen:
-			fmt.Printf("doortimout")
-			elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
+			fmt.Printf("in door timeout")
+			//elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 			TimerStart(elev.DoorOpenDuration_s, "door")
 		case config.EB_Moving, config.EB_Idle:
 			SetDoorCh <- false
 			MotorDirectionCh <- elev.Dirn
 		}
-
 	}
 	return elev
-} */
+}

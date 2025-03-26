@@ -22,7 +22,6 @@ const (
 	BT_HallUp   ButtonType = 0
 	BT_HallDown            = 1
 	BT_Cab                 = 2
-	BT_Nil                 = 3
 )
 
 type ButtonEvent struct {
@@ -47,13 +46,12 @@ const (
 	EB_Disconnected
 )
 
-
 type Elevator struct {
-	Floor             int
-	Dirn              MotorDirection
-	Requests          [N_floor_const][N_buttons_const]bool 
-	Behaviour         ElevatorBehaviour
-	Available         bool
-	ObstructionActive bool
-	DoorOpenDuration_s  float64
+	Floor              int
+	Dirn               MotorDirection
+	Requests           [N_floor_const][N_buttons_const]bool
+	Behaviour          ElevatorBehaviour
+	Available          bool
+	ObstructionActive  bool
+	DoorOpenDuration_s float64
 }

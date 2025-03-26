@@ -53,7 +53,7 @@ func updateCabRequests(cabRequest []bool, elev Elevator) Elevator {
 // Initializing single elevator module
 func InitElevator(floor int) Elevator {
 	elev := Elevator{Floor: floor, Dirn: config.MD_Stop, Behaviour: config.EB_Idle, ObstructionActive: false, Available: true, DoorOpenDuration_s: config.Door_open_time}
-	TimerStart(elev.DoorOpenDuration_s, "door")
+	//TimerStart(elev.DoorOpenDuration_s, "door")
 
 	return elev
 }
@@ -95,9 +95,9 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		case obstruction := <-drvObstr:
 			elev.ObstructionActive = obstruction
-			if !obstruction {
+			/* if !obstruction {
 				TimerStart(elev.DoorOpenDuration_s, "door")
-			}
+			} */
 
 		case <-drvStop:
 			fmt.Println("Terminating...")
@@ -106,9 +106,11 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 			os.Exit(0)
 
 		case <-drvTimeoutDoor:
+			fmt.Print("Timeout door")
 			if !elev.ObstructionActive {
 				elev = FsmOnDoorTimeout(elev, requestDoneCh, motorDirectionCh, setDoorCh)
 			}
+			//elev.timerActiveDoor = false
 		case <-drvTimeoutAvailable:
 			elev.Available = false
 			fmt.Println("Available deadline exceeded")
