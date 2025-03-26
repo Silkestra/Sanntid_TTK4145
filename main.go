@@ -16,38 +16,39 @@ type Elevator = singleElevator.Elevator
 func main() {
 	port := os.Args[2] // Reads port from terminal
 
-	elevio.Init("localhost:" + port) 
+	elevio.Init("localhost:" + port)
 
-	// Network channels 
-	peerTxEnableCh := make(chan bool) 			
-	peerUpdateCh := make(chan peers.PeerUpdate) 		   // Network -> Worldview 
+	// Network channels
+	peerTxEnableCh := make(chan bool)
+	peerUpdateCh := make(chan peers.PeerUpdate)            // Network -> Worldview
 	transmittWorldviewCh := make(chan worldview.Worldview) // Worldview -> Network
-	recieveWorldviewCh := make(chan worldview.Worldview)   // Network -> Worldview 
+	recieveWorldviewCh := make(chan worldview.Worldview)   // Network -> Worldview
 
-	// Single elevator channels 
-	setDoorCh := make(chan bool)                        	// SingleElevator -> Elevio 
-	requestDoneCh := make(chan config.ButtonEvent)      	// SingleElevator -> Worldview 
-	motorDirectionCh := make(chan config.MotorDirection)  	// SingleElevator -> Elevio 
-	stopLampCh := make(chan bool)                       	// SingleElevator -> Elevio 
-	updatedLocalElevatorCh := make(chan config.Elevator) 	// SingleElevator -> Worldview 
+	// Single elevator channels
+	setDoorCh := make(chan bool)                         // SingleElevator -> Elevio
+	requestDoneCh := make(chan config.ButtonEvent)       // SingleElevator -> Worldview
+	motorDirectionCh := make(chan config.MotorDirection) // SingleElevator -> Elevio
+	stopLampCh := make(chan bool)                        // SingleElevator -> Elevio
+	updatedLocalElevatorCh := make(chan config.Elevator) // SingleElevator -> Worldview
+	updatedLocalElevatorForTimer := make(chan config.Elevator)
 
-	// Worldview channels 
-	requestForLightsCh := make(chan [config.N_floor_const][config.N_buttons_const]bool) 	// Worldview -> Elevio
-	worldviewToArbitrationCh := make(chan worldview.Worldview)       						// Worldview -> HallAssigner                     
-	worldviewToCabCh := make(chan []bool, 1024)          									// Worldview -> SingleElevator 
+	// Worldview channels
+	requestForLightsCh := make(chan [config.N_floor_const][config.N_buttons_const]bool) // Worldview -> Elevio
+	worldviewToArbitrationCh := make(chan worldview.Worldview)                          // Worldview -> HallAssigner
+	worldviewToCabCh := make(chan []bool, 1024)                                         // Worldview -> SingleElevator
 
 	//Hallassigner
-	hallRequestToElevatorCh := make(chan [config.N_floor_const][config.N_hall_buttons]bool) // HallAssigner -> SingleElevator 
+	hallRequestToElevatorCh := make(chan [config.N_floor_const][config.N_hall_buttons]bool) // HallAssigner -> SingleElevator
 
-	// Hardware channels 
-	drvButtons := make(chan config.ButtonEvent) 	// Elevio -> Worldview 
-	drvFloors := make(chan int)						// Elevio -> SingleElevator 
-	drvObstr := make(chan bool)						// Elevio -> SingleElevator 
-	drvStop := make(chan bool)						// Elevio -> SingleElevator 
-	drvTimeoutDoor := make(chan bool)				// Elevio -> SingleElevator 
-	drvTimeoutAvailable := make(chan bool)			// Elevio -> SingleElevator 
+	// Hardware channels
+	drvButtons := make(chan config.ButtonEvent) // Elevio -> Worldview
+	drvFloors := make(chan int)                 // Elevio -> SingleElevator
+	drvObstr := make(chan bool)                 // Elevio -> SingleElevator
+	drvStop := make(chan bool)                  // Elevio -> SingleElevator
+	drvTimeoutDoor := make(chan bool)           // Elevio -> SingleElevator
+	drvTimeoutAvailable := make(chan bool)      // Elevio -> SingleElevator
 
-	ID := network.InitNetwork(peerUpdateCh, 
+	ID := network.InitNetwork(peerUpdateCh,
 		peerTxEnableCh,
 		transmittWorldviewCh,
 		recieveWorldviewCh)
@@ -59,11 +60,11 @@ func main() {
 		drvTimeoutDoor,
 		drvTimeoutAvailable)
 
-	var elev = singleElevator.InitElevator(floor) 
-	var world = worldview.InitWorldview(*elev, ID) 
+	var elev = singleElevator.InitElevator(floor)
+	var world = worldview.InitWorldview(ID)
 
-	go singleElevator.PollDoorTimeout(drvTimeoutDoor, *elev)
-	go singleElevator.PollAvailableTimeout(drvTimeoutAvailable, elev)
+	go singleElevator.PollDoorTimeout(drvTimeoutDoor, elev)
+	go singleElevator.PollAvailableTimeout(drvTimeoutAvailable, updatedLocalElevatorForTimer) //endret fra elev til updatedElevatorCH for å få oppdatert elevator
 
 	go elevio.ElevatorIORun(motorDirectionCh,
 		setDoorCh,
@@ -71,7 +72,7 @@ func main() {
 		stopLampCh,
 		requestForLightsCh)
 
-	go singleElevator.SingleElevatorRun(hallRequestToElevatorCh, 
+	go singleElevator.SingleElevatorRun(hallRequestToElevatorCh,
 		updatedLocalElevatorCh,
 		drvFloors,
 		drvObstr,
@@ -83,17 +84,18 @@ func main() {
 		stopLampCh,
 		drvTimeoutAvailable,
 		worldviewToCabCh,
+		updatedLocalElevatorForTimer,
 		elev)
 
 	go hallassigner.HallArbitrationRun(worldviewToArbitrationCh,
 		hallRequestToElevatorCh,
 		ID)
 
-	go worldview.WorldviewRun(peerUpdateCh, 
-		drvButtons,          //localRequestsCh in Worldview    
-		updatedLocalElevatorCh, 
+	go worldview.WorldviewRun(peerUpdateCh,
+		drvButtons, //localRequestsCh in Worldview
+		updatedLocalElevatorCh,
 		recieveWorldviewCh,
-		worldviewToArbitrationCh, 
+		worldviewToArbitrationCh,
 		transmittWorldviewCh,
 		requestDoneCh,
 		requestForLightsCh,

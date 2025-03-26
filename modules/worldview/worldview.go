@@ -12,11 +12,11 @@ import (
 
 type Elevator = config.Elevator
 
-// States for the requests for cyclic counter. 
+// States for the requests for cyclic counter.
 // Uncomfirmed = detected request (local or received over network)
 // Confirmed = all active elevators have detected the request (in Unconfirmed state)
 // Done = request has been serviced (local or received over network)
-// Unknown = elevator has not detected a different state after initialization 
+// Unknown = elevator has not detected a different state after initialization
 type RequestStates int
 
 const (
@@ -35,34 +35,25 @@ type Worldview struct {
 	CabOrderBooks  [config.N_elevators][config.N_elevators][config.N_floor_const]RequestStates
 }
 
-// Initializes Wordlview module with all other elevators as Disconnected and all Orderbooks in state Unknown 
-func InitWorldview(elev Elevator, id string) *Worldview {
+// Initializes Wordlview module with all other elevators as Disconnected and all Orderbooks in state Unknown
+func InitWorldview(id string) Worldview {
 	num, err := strconv.Atoi(id)
 	if err != nil {
-		fmt.Errorf("invalid ID, must be an integer: %v", err)
+		fmt.Printf("invalid ID, must be an integer: %v", err)
 	}
 	if num < 0 || num >= len([config.N_elevators]Elevator{}) {
-		fmt.Errorf("ID %d is out of valid range [0,2]", num)
+		fmt.Printf("ID %d is out of valid range [0,2]", num)
 	}
-	world := &Worldview{
+	world := Worldview{
 		ID: num,
 	}
-	
-	world.Elevators[num] = elev
-	for i := range world.Elevators {
-		if i != num {
-			world.Elevators[i].Behaviour = config.EB_Disconnected
-		}
-	}
-
 	world.HallOrderBooks, world.CabOrderBooks = setAllStatesUnknown(world.HallOrderBooks, world.CabOrderBooks)
 	return world
 }
 
-
-func setAllStatesUnknown(HallOrderBooks [config.N_elevators][config.N_floor_const][config.N_hall_buttons]RequestStates, 
-	CabOrderBooks [config.N_elevators][config.N_elevators][config.N_floor_const]RequestStates)(
-	[config.N_elevators][config.N_floor_const][config.N_hall_buttons]RequestStates, 
+func setAllStatesUnknown(HallOrderBooks [config.N_elevators][config.N_floor_const][config.N_hall_buttons]RequestStates,
+	CabOrderBooks [config.N_elevators][config.N_elevators][config.N_floor_const]RequestStates) (
+	[config.N_elevators][config.N_floor_const][config.N_hall_buttons]RequestStates,
 	[config.N_elevators][config.N_elevators][config.N_floor_const]RequestStates) {
 	for i := range HallOrderBooks {
 		for j := range HallOrderBooks[i] {
@@ -123,21 +114,23 @@ func CombineHallAndCabReq(myWorld Worldview) [config.N_floor_const][config.N_but
 	return combined
 }
 
-func UpdateMyElevator(newestElev Elevator, myWorld *Worldview) {
+func UpdateMyElevator(newestElev Elevator, myWorld Worldview) Worldview {
 	myWorld.Elevators[myWorld.ID] = newestElev
+	return myWorld
 }
 
-// Inserts orders in OrderBooks according to ButtonEvent as Unconfirmed 
-func InsertInOrderBook(btnpressed config.ButtonEvent, myWorld *Worldview) {
+// Inserts orders in OrderBooks according to ButtonEvent as Unconfirmed
+func InsertInOrderBook(btnpressed config.ButtonEvent, myWorld Worldview) Worldview {
 	if btnpressed.Button == config.BT_HallUp || btnpressed.Button == config.BT_HallDown {
 		myWorld.HallOrderBooks[myWorld.ID][btnpressed.Floor][btnpressed.Button] = Unconfirmed
 	}
 	if btnpressed.Button == config.BT_Cab {
 		myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][btnpressed.Floor] = Unconfirmed
 	}
+	return myWorld
 }
 
-func DoneInOrderBook(myWorld *Worldview, requestDoneCh config.ButtonEvent) {
+func DoneInOrderBook(myWorld Worldview, requestDoneCh config.ButtonEvent) Worldview {
 	floor := requestDoneCh.Floor
 	button := int(requestDoneCh.Button)
 
@@ -147,20 +140,22 @@ func DoneInOrderBook(myWorld *Worldview, requestDoneCh config.ButtonEvent) {
 	} else {
 		myWorld.HallOrderBooks[myWorld.ID][floor][button] = Done
 	}
+	return myWorld
 }
 
 // Marks ids received as disconnected in own Worldview
-func MarkAsDisconnected(peer_lost []string, myWorld *Worldview) {
+func MarkAsDisconnected(peer_lost []string, myWorld Worldview) Worldview {
 	for _, id := range peer_lost {
 		num, err := strconv.Atoi(id)
 		if err != nil {
-			fmt.Errorf("invalid ID, must be an integer: %v", err)
+			fmt.Printf("invalid ID, must be an integer: %v", err)
 		}
 		if num <= 3 && num >= 0 {
 			myWorld.Elevators[num].Behaviour = config.EB_Disconnected
 
 		}
 	}
+	return myWorld
 }
 
 // Transitions RequestStates in HallOrderBooks
@@ -294,55 +289,54 @@ func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 			lost = append(lost, i)
 		}
 	}
-	
+
 	myWorld = CyclicCounterHallOrderBook(myWorld, newWorld, lost)
 	myWorld = CyclicCounterCabOrderBook(myWorld, newWorld, lost)
 
 	return myWorld
 }
 
-// Controls Worldview-module in main-loop. Ran as a goroutine 
+// Controls Worldview-module in main-loop. Ran as a goroutine
 func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and new elevators from network module
 	localRequestCh <-chan config.ButtonEvent, // Local request event in elevator
 	updatedLocalElevatorCh <-chan Elevator, // Receives newest updates on own elevator
-	receiveWorldviewCh <-chan Worldview, // Worldview received over network, to be merged 
+	receiveWorldviewCh <-chan Worldview, // Worldview received over network, to be merged
 	worldviewToArbitrationCh chan<- Worldview, // Sends current worldview to hallarbitration logic
 	transmittWorldviewCh chan<- Worldview, // Transmitts own worldview to network
-	requestDoneCh <-chan config.ButtonEvent, // Receives completed request 
-	requestForLightsCh chan<- [config.N_floor_const][config.N_buttons_const]bool, // Communicates with IO-module to set lights 
+	requestDoneCh <-chan config.ButtonEvent, // Receives completed request
+	requestForLightsCh chan<- [config.N_floor_const][config.N_buttons_const]bool, // Communicates with IO-module to set lights
 	worldviewToCabCh chan<- []bool, // Sends cabrequests to single elevator
-	world *Worldview) { 
+	world Worldview) {
 
 	ticker := time.NewTicker(time.Duration(config.N_send_myworld_rate) * time.Millisecond) // Rate of transmitting myworldview to network
 	defer ticker.Stop()
 	for {
 		select {
 
-		case peers := <-peerUpdateCh: 
-			MarkAsDisconnected(peers.Lost, world) 
+		case peers := <-peerUpdateCh:
+			world = MarkAsDisconnected(peers.Lost, world)
 
 		case elev := <-updatedLocalElevatorCh:
-			UpdateMyElevator(elev, world)
-			requestForLightsCh <- CombineHallAndCabReq(*world)
+			world = UpdateMyElevator(elev, world)
+			requestForLightsCh <- CombineHallAndCabReq(world)
 
 		case buttonEvent := <-localRequestCh:
-			InsertInOrderBook(buttonEvent, world)
-			requestForLightsCh <- CombineHallAndCabReq(*world)
-			worldviewToCabCh <- MakeCabRequests(*world)
+			world = InsertInOrderBook(buttonEvent, world)
+			requestForLightsCh <- CombineHallAndCabReq(world)
+			worldviewToCabCh <- MakeCabRequests(world)
 
 		case receivedWorld := <-receiveWorldviewCh:
-			*world = UpdateWorldview(*world, receivedWorld)
-			requestForLightsCh <- CombineHallAndCabReq(*world)
-			cabRequests := MakeCabRequests(*world)
-			worldviewToCabCh <- cabRequests
+			world = UpdateWorldview(world, receivedWorld)
+			requestForLightsCh <- CombineHallAndCabReq(world)
+			worldviewToCabCh <- MakeCabRequests(world)
 
 		case buttonEvent := <-requestDoneCh:
-			DoneInOrderBook(world, buttonEvent)
-			requestForLightsCh <- CombineHallAndCabReq(*world)
-			
+			world = DoneInOrderBook(world, buttonEvent)
+			requestForLightsCh <- CombineHallAndCabReq(world)
+
 		case <-ticker.C:
-			worldviewToArbitrationCh <- *world
-			transmittWorldviewCh <- *world
+			worldviewToArbitrationCh <- world
+			transmittWorldviewCh <- world
 		}
 	}
 }

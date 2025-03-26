@@ -25,7 +25,7 @@ type HRAInput struct {
 	States       map[string]HRAElevState       `json:"states"`
 }
 
-// Converting from elevator and worlview type to HRAElevState type 
+// Converting from elevator and worlview type to HRAElevState type
 func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	switch elev.Behaviour {
 	case config.EB_Idle, config.EB_Moving, config.EB_DoorOpen:
@@ -52,7 +52,7 @@ func FillHRAInput(world worldview.Worldview) HRAInput {
 		}
 	}
 	return HRAInput{
-		HallRequests: worldview.MakeHallRequests(world), 
+		HallRequests: worldview.MakeHallRequests(world),
 		States:       states,
 	}
 }

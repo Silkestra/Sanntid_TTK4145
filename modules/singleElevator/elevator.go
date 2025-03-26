@@ -35,65 +35,69 @@ func DirectionToString(dirn config.MotorDirection) string {
 		return "disconnected"
 	}
 }
-func updateHallRequests(hallRequest [config.N_floor_const][config.N_hall_buttons]bool, elev *Elevator) {
+func updateHallRequests(hallRequest [config.N_floor_const][config.N_hall_buttons]bool, elev Elevator) Elevator {
 	for i := 0; i < config.N_floor_const; i++ {
 		elev.Requests[i][0] = hallRequest[i][0]
 		elev.Requests[i][1] = hallRequest[i][1]
 	}
+	return elev
 }
 
-func updateCabRequests(cabRequest []bool, elev *Elevator){
+func updateCabRequests(cabRequest []bool, elev Elevator) Elevator {
 	for i := 0; i < config.N_floor_const; i++ {
 		elev.Requests[i][2] = cabRequest[i]
 	}
-} 
-
-// Initializing single elevator module 
-func InitElevator(floor int) *Elevator { 
-	conf := config.Config{ClearRequestVariant: config.CV_InDirn, DoorOpenDuration_s: config.Door_open_time}
-	elev := Elevator{Floor: floor, Dirn: config.MD_Stop, Behaviour: config.EB_Idle, ObstructionActive: false, Available: true, Config: conf}
-	TimerStart(elev.Config.DoorOpenDuration_s, "door")
-
-	return &elev
+	return elev
 }
 
-// Controls Single Elevator in main-loop. Ran as a goroutine. 
+// Initializing single elevator module
+func InitElevator(floor int) Elevator {
+	elev := Elevator{Floor: floor, Dirn: config.MD_Stop, Behaviour: config.EB_Idle, ObstructionActive: false, Available: true, DoorOpenDuration_s: config.Door_open_time}
+	TimerStart(elev.DoorOpenDuration_s, "door")
+
+	return elev
+}
+
+// Controls Single Elevator in main-loop. Ran as a goroutine.
 func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][config.N_hall_buttons]bool, // Hallrequests recived from hallarbitration
 	updatedLocalElevatorCh chan<- Elevator, // Output channel for updating single elevator to worldview
-	drvFloors <-chan int, // IO interaction 
-	drvObstr <-chan bool, // IO interaction 
-	drvStop <-chan bool, // IO interaction 
+	drvFloors <-chan int, // IO interaction
+	drvObstr <-chan bool, // IO interaction
+	drvStop <-chan bool, // IO interaction
 	drvTimeoutDoor <-chan bool, // Door-deadline time exceeded
-	setDoorCh chan<- bool, // IO interaction 
+	setDoorCh chan<- bool, // IO interaction
 	requestDoneCh chan<- config.ButtonEvent, // Communicates with Worldview-module that a order is completed
-	motorDirectionCh chan<- config.MotorDirection, // IO interaction 
-	stopLampCh chan<- bool, // IO interaction 
-	drvTimeoutAvailable <-chan bool, // Available-deadline time exceeded 
-	worldviewToCabCh <-chan []bool, // Recieves cabrequests from Worldview 
-	elev *Elevator) { 
+	motorDirectionCh chan<- config.MotorDirection, // IO interaction
+	stopLampCh chan<- bool, // IO interaction
+	drvTimeoutAvailable <-chan bool, // Available-deadline time exceeded
+	worldviewToCabCh <-chan []bool, // Recieves cabrequests from Worldview
+	updatedLocalElevatorForTimer chan<- Elevator, // Output channel for updating single elevator to timer
+	elev Elevator) {
 
 	for {
+		updatedLocalElevatorCh <- elev
+		updatedLocalElevatorForTimer <- elev
+
 		select {
 		case hallRequest := <-hallRequestToElevatorCh:
-			updateHallRequests(hallRequest, elev)
-			FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh) 
-			updatedLocalElevatorCh <- *elev
+			elev = updateHallRequests(hallRequest, elev)
+			elev = FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh)
+			if elev.Behaviour == config.EB_Idle {
+				TimerStart(elev.DoorOpenDuration_s, "available")
+			}
 
 		case cabRequest := <-worldviewToCabCh:
-			updateCabRequests(cabRequest, elev)
-			FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh)
-			updatedLocalElevatorCh <- *elev
+			elev = updateCabRequests(cabRequest, elev)
+			elev = FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh)
 
 		case floor := <-drvFloors:
-			FsmOnFloorArrival(floor, elev, requestDoneCh, motorDirectionCh, setDoorCh)
-			updatedLocalElevatorCh <- *elev
+			elev = FsmOnFloorArrival(floor, elev, requestDoneCh, motorDirectionCh, setDoorCh)
 
 		case obstruction := <-drvObstr:
 			elev.ObstructionActive = obstruction
 			if !obstruction {
-				TimerStart(elev.Config.DoorOpenDuration_s, "door")
+				TimerStart(elev.DoorOpenDuration_s, "door")
 			}
-			updatedLocalElevatorCh <- *elev
 
 		case <-drvStop:
 			fmt.Println("Terminating...")
@@ -102,12 +106,12 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 			os.Exit(0)
 
 		case <-drvTimeoutDoor:
-			if !elev.ObstructionActive { 
-				FsmOnDoorTimeout(elev, requestDoneCh, motorDirectionCh, setDoorCh)
-				updatedLocalElevatorCh <- *elev
+			if !elev.ObstructionActive {
+				elev = FsmOnDoorTimeout(elev, requestDoneCh, motorDirectionCh, setDoorCh)
 			}
 		case <-drvTimeoutAvailable:
 			elev.Available = false
+			fmt.Println("Available deadline exceeded")
 		}
 	}
 }
