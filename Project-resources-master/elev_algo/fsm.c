@@ -155,7 +155,6 @@ void fsm_onDoorTimeout(void){
         DirnBehaviourPair pair = requests_chooseDirection(elevator);
         elevator.dirn = pair.dirn;
         elevator.behaviour = pair.behaviour;
-        
         switch(elevator.behaviour){
         case EB_DoorOpen:
             timer_start(elevator.config.doorOpenDuration_s);

@@ -23,7 +23,7 @@ func FsmOnRequest(elev Elevator, SetDoorCh chan<- bool, requestDone chan<- confi
 		case config.EB_Moving:
 			MotorDirectionCh <- elev.Dirn
 		case config.EB_Idle:
-			//TimerStart(elev.DoorOpenDuration_s, "available") //Starting available deadline
+			TimerStart(elev.DoorOpenDuration_s, "available") //Starting available deadline
 			//fmt.Printf("available timer started")
 		}
 	default:
@@ -62,9 +62,32 @@ func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, Mo
 	case config.EB_DoorOpen:
 		fmt.Printf("doortimout")
 		TimerStart(elev.DoorOpenDuration_s, "door")
+		elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
 	case config.EB_Moving, config.EB_Idle:
 		SetDoorCh <- false
 		MotorDirectionCh <- elev.Dirn
 	}
+
 	return elev
 }
+
+/* func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
+	switch elev.Behaviour {
+	case config.EB_DoorOpen:
+		elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
+		output := RequestsChooseDirection(elev)
+		elev.Dirn = output.Dirn
+		elev.Behaviour = output.Behaviour
+		switch elev.Behaviour {
+		case config.EB_DoorOpen:
+			fmt.Printf("doortimout")
+			elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
+			TimerStart(elev.DoorOpenDuration_s, "door")
+		case config.EB_Moving, config.EB_Idle:
+			SetDoorCh <- false
+			MotorDirectionCh <- elev.Dirn
+		}
+
+	}
+	return elev
+} */

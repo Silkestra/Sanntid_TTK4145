@@ -112,7 +112,6 @@ func RequestsShouldClearImmediately(e Elevator, btn_floor int, btn_type Button) 
 
 func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEvent) Elevator {
 	e.Requests[e.Floor][config.BT_Cab] = false
-	fmt.Println(config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab})
 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab}
 
 	switch e.Dirn {
@@ -120,11 +119,11 @@ func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEve
 		// if !requestsAbove(e) && !e.Requests[e.Floor][config.BT_HallUp] {
 		// 	e.Requests[e.Floor][config.BT_HallDown] = false
 		// 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-
 		// }
 
 		e.Requests[e.Floor][config.BT_HallUp] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
+		fmt.Printf("MD_UP")
 
 	case config.MD_Down:
 		// if !requestsBelow(e) && !e.Requests[e.Floor][config.BT_HallDown] {
@@ -133,13 +132,34 @@ func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEve
 		// }
 		e.Requests[e.Floor][config.BT_HallDown] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
+		fmt.Printf("MD_Down")
 
 	case config.MD_Stop:
-		e.Requests[e.Floor][config.BT_HallUp] = false
-		e.Requests[e.Floor][config.BT_HallDown] = false
+
+		//default:
+		if e.Requests[e.Floor][config.BT_HallUp] && e.Requests[e.Floor][config.BT_HallDown] {
+			e.Requests[e.Floor][config.BT_HallUp] = false
+			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
+			fmt.Printf("Two")
+			TimerStart(e.DoorOpenDuration_s, "door")
+		} else {
+			if e.Requests[e.Floor][config.BT_HallUp] {
+				e.Requests[e.Floor][config.BT_HallUp] = false
+				requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
+				fmt.Printf("Two Up")
+			}
+			if e.Requests[e.Floor][config.BT_HallDown] {
+				e.Requests[e.Floor][config.BT_HallDown] = false
+				requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
+				fmt.Printf("Two Down")
+			}
+
+		}
+		/* e.Requests[e.Floor][config.BT_HallUp] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
+		e.Requests[e.Floor][config.BT_HallDown] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-	default:
+		*/
 	}
 	return e
 }
