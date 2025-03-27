@@ -43,7 +43,7 @@ func requestsHere(e Elevator) bool {
 	return false
 }
 
-func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
+func requestsChooseDirection(e Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case config.MD_Up:
 		if requestsAbove(e) {
@@ -83,7 +83,7 @@ func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 	}
 }
 
-func RequestsShouldStop(e Elevator) bool {
+func requestsShouldStop(e Elevator) bool {
 	switch e.Dirn {
 	case config.MD_Down:
 		return (e.Requests[e.Floor][config.BT_HallDown]) ||
@@ -102,37 +102,35 @@ func RequestsShouldStop(e Elevator) bool {
 	}
 }
 
-func RequestsShouldClearImmediately(e Elevator, btn_floor int, btn_type Button) bool {
-	return e.Floor == btn_floor &&
-		(e.Dirn == config.MD_Up && btn_type == config.BT_HallUp ||
-			e.Dirn == config.MD_Down && btn_type == config.BT_HallDown ||
-			e.Dirn == config.MD_Stop ||
-			btn_type == config.BT_Cab)
-}
 
-func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEvent) Elevator {
+func clearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEvent) Elevator {
 	e.Requests[e.Floor][config.BT_Cab] = false
 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab}
 	fmt.Println(e.Requests[e.Floor][config.BT_HallUp], e.Requests[e.Floor][config.BT_HallDown])
 	switch e.Dirn {
+
+	case config.MD_Down:
+		if !requestsBelow(e) && !e.Requests[e.Floor][config.BT_HallDown] {
+			e.Requests[e.Floor][config.BT_HallUp] = false
+			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
+			fmt.Println("1")
+		}
+		e.Requests[e.Floor][config.BT_HallDown] = false
+		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
+		//fmt.Printf("MD_Down")
+		fmt.Println("2")
+
 	case config.MD_Up:
 		if !requestsAbove(e) && !e.Requests[e.Floor][config.BT_HallUp] {
 			e.Requests[e.Floor][config.BT_HallDown] = false
 			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
+			fmt.Println("3")
 		}
 
 		e.Requests[e.Floor][config.BT_HallUp] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
 		//fmt.Printf("MD_UP")
-
-	case config.MD_Down:
-		if !requestsBelow(e) && !e.Requests[e.Floor][config.BT_HallDown] {
-			e.Requests[e.Floor][config.BT_HallUp] = false
-			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-		}
-		e.Requests[e.Floor][config.BT_HallDown] = false
-		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-		//fmt.Printf("MD_Down")
+		fmt.Println("4")
 
 	case config.MD_Stop:
 		//default:

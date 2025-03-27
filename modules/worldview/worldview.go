@@ -99,7 +99,7 @@ func MakeCabRequests(world Worldview) []bool {
 	return output
 }
 
-func CombineHallAndCabReq(myWorld Worldview) [config.N_floor_const][config.N_buttons_const]bool {
+func combineHallAndCabReq(myWorld Worldview) [config.N_floor_const][config.N_buttons_const]bool {
 	halls := MakeHallRequests(myWorld)                              // [4][2]bool
 	cabs := MakeCabRequests(myWorld)                                // [4]bool
 	var combined [config.N_floor_const][config.N_buttons_const]bool // [4][3]bool result
@@ -113,7 +113,7 @@ func CombineHallAndCabReq(myWorld Worldview) [config.N_floor_const][config.N_but
 }
 
 // Inserts orders in OrderBooks according to ButtonEvent as Unconfirmed
-func InsertInOrderBook(btnpressed config.ButtonEvent, myWorld Worldview) Worldview {
+func insertInOrderBook(btnpressed config.ButtonEvent, myWorld Worldview) Worldview {
 	if btnpressed.Button == config.BT_HallUp || btnpressed.Button == config.BT_HallDown {
 		myWorld.HallOrderBooks[myWorld.ID][btnpressed.Floor][btnpressed.Button] = Unconfirmed
 	}
@@ -123,7 +123,7 @@ func InsertInOrderBook(btnpressed config.ButtonEvent, myWorld Worldview) Worldvi
 	return myWorld
 }
 
-func DoneInOrderBook(myWorld Worldview, requestDoneCh config.ButtonEvent) Worldview {
+func doneInOrderBook(myWorld Worldview, requestDoneCh config.ButtonEvent) Worldview {
 	floor := requestDoneCh.Floor
 	button := int(requestDoneCh.Button)
 
@@ -137,8 +137,8 @@ func DoneInOrderBook(myWorld Worldview, requestDoneCh config.ButtonEvent) Worldv
 }
 
 // Marks ids received as disconnected in own Worldview
-func MarkAsDisconnected(peer_lost []string, myWorld Worldview) Worldview {
-	for _, id := range peer_lost {
+func markAsDisconnected(peerLost []string, myWorld Worldview) Worldview {
+	for _, id := range peerLost {
 		num, err := strconv.Atoi(id)
 		if err != nil {
 			fmt.Printf("invalid ID, must be an integer: %v", err)
@@ -147,11 +147,17 @@ func MarkAsDisconnected(peer_lost []string, myWorld Worldview) Worldview {
 			myWorld.Elevators[num].Behaviour = config.EB_Disconnected
 		}
 	}
+	/* newID, err := strconv.Atoi(newPeer)
+	if err != nil {
+		fmt.Printf("invalid ID new peer, must be an integer: %v", err)
+	}
+	myWorld.Elevators[newID].Behaviour = config.EB_New */
+
 	return myWorld
 }
 
 // Transitions RequestStates in HallOrderBooks
-func CyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []int) Worldview {
+func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []int) Worldview {
 	for j := 0; j < config.N_floor_const; j++ {
 		for k := 0; k < config.N_hall_buttons; k++ {
 
@@ -174,7 +180,7 @@ func CyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 			case Confirmed:
 				doneFound := false
 				for n := 0; n < config.N_elevators; n++ {
-					if !slices.Contains(lost, n) || n == myWorld.ID {
+					if !slices.Contains(lost, n) || n == myWorld.ID { //&& (n != newPeer && newPeer != myWorld.ID) {
 						if myWorld.HallOrderBooks[n][j][k] == Done {
 							doneFound = true
 							break
@@ -211,7 +217,7 @@ func CyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 }
 
 // Transitions RequestStates in CabOrderBooks
-func CyclicCounterCabOrderBook(myWorld Worldview, newWorld Worldview, lost []int) Worldview {
+func cyclicCounterCabOrderBook(myWorld Worldview, newWorld Worldview, lost []int) Worldview {
 	for k := 0; k < config.N_floor_const; k++ {
 		switch myWorld.CabOrderBooks[myWorld.ID][myWorld.ID][k] {
 
@@ -269,21 +275,25 @@ func CyclicCounterCabOrderBook(myWorld Worldview, newWorld Worldview, lost []int
 }
 
 // Updates worldview by merging received worldview into own worldview
-func UpdateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
+func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 	myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
 	myWorld.HallOrderBooks[newWorld.ID] = newWorld.HallOrderBooks[newWorld.ID]
 	myWorld.CabOrderBooks[newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID]
 	myWorld.CabOrderBooks[myWorld.ID][newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID][newWorld.ID]
 
 	var lost []int
+	//var new int
 	for i, elev := range myWorld.Elevators {
 		if elev.Behaviour == config.EB_Disconnected {
 			lost = append(lost, i)
 		}
+		/* if elev.Behaviour == config.EB_New {
+			new = i
+		} */
 	}
 
-	myWorld = CyclicCounterHallOrderBook(myWorld, newWorld, lost)
-	myWorld = CyclicCounterCabOrderBook(myWorld, newWorld, lost)
+	myWorld = cyclicCounterHallOrderBook(myWorld, newWorld, lost)
+	myWorld = cyclicCounterCabOrderBook(myWorld, newWorld, lost)
 
 	return myWorld
 }
@@ -298,42 +308,55 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 	requestDoneCh <-chan config.ButtonEvent, // Receives completed request
 	requestForLightsCh chan<- [config.N_floor_const][config.N_buttons_const]bool, // Communicates with IO-module to set lights
 	worldviewToCabCh chan<- []bool, // Sends cabrequests to single elevator
-	world Worldview) {
+	ID string) {
 
 	ticker := time.NewTicker(time.Duration(config.N_send_myworld_rate) * time.Millisecond) // Rate of transmitting myworldview to network
 	defer ticker.Stop()
+
+	world := InitWorldview(ID)
+
 	for {
 		select {
 
 		case peers := <-peerUpdateCh:
-			fmt.Println("Peers lost ", peers.Peers)
-			world = MarkAsDisconnected(peers.Lost, world)
+			fmt.Println("Peers  ", peers.Peers)
+			fmt.Println("Peers LOST ", peers.Lost)
+			fmt.Println("Peers  ", peers.New)
+			world = markAsDisconnected(peers.Lost, world)
 
 		case elev := <-updatedLocalElevatorCh:
 			oldWorld := world
 			world.Elevators[world.ID] = elev
-			world = UpdateWorldview(oldWorld, world)
-			requestForLightsCh <- CombineHallAndCabReq(world)
+			world = updateWorldview(oldWorld, world)
+			requestForLightsCh <- combineHallAndCabReq(world)
 
 		case buttonEvent := <-localRequestCh:
 			oldWorld := world
-			world = InsertInOrderBook(buttonEvent, world)
-			world = UpdateWorldview(oldWorld, world)
-			requestForLightsCh <- CombineHallAndCabReq(world)
+			world = insertInOrderBook(buttonEvent, world)
+			world = updateWorldview(oldWorld, world)
+			requestForLightsCh <- combineHallAndCabReq(world)
 			worldviewToCabCh <- MakeCabRequests(world)
 
 		case receivedWorld := <-receiveWorldviewCh:
-			world = UpdateWorldview(world, receivedWorld)
-			requestForLightsCh <- CombineHallAndCabReq(world)
-			worldviewToCabCh <- MakeCabRequests(world)
+			oldWorld := world
+			world = updateWorldview(world, receivedWorld)
+			if oldWorld != world {
+				requestForLightsCh <- combineHallAndCabReq(world)
+				worldviewToCabCh <- MakeCabRequests(world)
+			}
+		/* 	requestForLightsCh <- combineHallAndCabReq(world)
+		worldviewToCabCh <- MakeCabRequests(world) */
 
 		case buttonEvent := <-requestDoneCh:
+			//fmt.Println("\n in wolrdview on requestdone event. Buttonevent for clearing:", buttonEvent)
 			oldWorld := world
-			world = DoneInOrderBook(world, buttonEvent)
-			world = UpdateWorldview(oldWorld, world)
-			requestForLightsCh <- CombineHallAndCabReq(world)
+			world = doneInOrderBook(world, buttonEvent)
+			//fmt.Println("\n WorldviewRun: requestdonech", time.Now(), world.Elevators[world.ID].Requests)
+			world = updateWorldview(oldWorld, world)
+			requestForLightsCh <- combineHallAndCabReq(world)
 
 		case <-ticker.C:
+			//fmt.Println("\n World that gets sent to arbitration", world.Elevators[world.ID])
 			worldviewToArbitrationCh <- world
 			transmittWorldviewCh <- world
 		}

@@ -36,7 +36,11 @@ func DirectionToString(dirn config.MotorDirection) string {
 	}
 }
 func updateHallRequests(hallRequest [config.N_floor_const][config.N_hall_buttons]bool, elev Elevator) Elevator {
+	//hasChanged := false
 	for i := 0; i < config.N_floor_const; i++ {
+		/* if elev.Requests[i][0] != hallRequest[i][0] || elev.Requests[i][1] != hallRequest[i][1] {
+			hasChanged = true
+		} */
 		elev.Requests[i][0] = hallRequest[i][0]
 		elev.Requests[i][1] = hallRequest[i][1]
 	}
@@ -83,22 +87,31 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		select {
 		case hallRequest := <-hallRequestToElevatorCh:
+			//fmt.Println("\nrequest recieved: ", time.Now())
+			//fmt.Println("\n  requests:", hallRequest)
+			//hasChanged := false
 			elev = updateHallRequests(hallRequest, elev)
-			elev = FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh)
+			/* if hasChanged {
+				elev = FsmOnRequest(elev, setDoorCh, motorDirectionCh)
+			} */
+			elev = FsmOnRequest(elev, setDoorCh, motorDirectionCh)
 			if elev.Behaviour == config.EB_Idle {
 				TimerStart(elev.DoorOpenDuration_s, "available")
 			}
 
 		case cabRequest := <-worldviewToCabCh:
 			elev = updateCabRequests(cabRequest, elev)
-			elev = FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh)
+			//fmt.Println("\n in elevator on cabrequest event: ", elev.Requests)
+			elev = FsmOnRequest(elev, setDoorCh, motorDirectionCh)
 
 		case floor := <-drvFloors:
-			elev = FsmOnFloorArrival(floor, elev, requestDoneCh, motorDirectionCh, setDoorCh)
+			elev = FsmOnFloorArrival(floor, elev, motorDirectionCh, setDoorCh)
 
 		case obstruction := <-drvObstr:
 			elev.ObstructionActive = obstruction
-
+			if !obstruction {
+				TimerStart(elev.DoorOpenDuration_s, "door")
+			}
 
 		case <-drvStop:
 			fmt.Println("Terminating...")

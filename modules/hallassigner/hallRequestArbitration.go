@@ -122,6 +122,7 @@ func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
 	for {
 		select {
 		case worldToArbitration := <-worldViewToArbitrationCh:
+			//fmt.Println("\n In hallarbitration", (HallassignerToElevRequest(HallAssigner(worldToArbitration), ID)))
 			hallRequestToElevatorCh <- HallassignerToElevRequest(HallAssigner(worldToArbitration), ID)
 		}
 	}

@@ -25,10 +25,10 @@ func InitNetwork(peerUpdateCh chan peers.PeerUpdate,
 		}
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
-	go bcast.Transmitter(16569, transmittWorldviewCh)
-	go bcast.Receiver(16569, recieveWorldviewCh)
-	go peers.Transmitter(15647, id, peerTxEnableCh)
-	go peers.Receiver(15647, peerUpdateCh)
+	go bcast.Transmitter(16666, transmittWorldviewCh)
+	go bcast.Receiver(16666, recieveWorldviewCh)
+	go peers.Transmitter(15555, id, peerTxEnableCh)
+	go peers.Receiver(15555, peerUpdateCh)
 
 	return id
 }

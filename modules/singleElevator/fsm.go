@@ -4,20 +4,21 @@ import (
 	"Driver-go/modules/config"
 	"Driver-go/modules/elevio"
 	"fmt"
+	"time"
 )
 
 // Called every time elev.Request is updated, acts according to how FSM is defined for a single elevator
-func FsmOnRequest(elev Elevator, SetDoorCh chan<- bool, requestDone chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection) Elevator {
+func FsmOnRequest(elev Elevator, SetDoorCh chan<- bool, MotorDirectionCh chan<- config.MotorDirection) Elevator {
 	switch elev.Behaviour {
 	case config.EB_Idle:
-		output := RequestsChooseDirection(elev)
+		output := requestsChooseDirection(elev)
 		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour
 
 		switch elev.Behaviour {
 		case config.EB_DoorOpen:
 			SetDoorCh <- true
-			fmt.Printf("onrequest")
+			fmt.Println("onrequest : ", time.Now())
 			TimerStart(elev.DoorOpenDuration_s, "door")
 		case config.EB_Moving:
 			MotorDirectionCh <- elev.Dirn
@@ -30,13 +31,13 @@ func FsmOnRequest(elev Elevator, SetDoorCh chan<- bool, requestDone chan<- confi
 }
 
 // Called every time elevator arrives at a floor, acts according to how FSM is defined for a single elevator
-func FsmOnFloorArrival(newFloor int, elev Elevator, requestDoneCh chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
+func FsmOnFloorArrival(newFloor int, elev Elevator, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
 	elev.Floor = newFloor
 	elevio.SetFloorIndicator(elev.Floor)
 
 	switch elev.Behaviour {
 	case config.EB_Moving:
-		if RequestsShouldStop(elev) {
+		if requestsShouldStop(elev) {
 			MotorDirectionCh <- config.MotorDirection(0)
 			SetDoorCh <- true
 			TimerStart(elev.DoorOpenDuration_s, "door")
@@ -50,14 +51,13 @@ func FsmOnFloorArrival(newFloor int, elev Elevator, requestDoneCh chan<- config.
 
 // Called every time the door times out, acts according to how FSM is defined for a single elevator
 func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, MotorDirectionCh chan<- config.MotorDirection, SetDoorCh chan<- bool) Elevator {
-	
+
 	switch elev.Behaviour {
 	case config.EB_DoorOpen:
-		elev = ClearRequestsAtCurrentFloor(elev, requestDoneCh)
-		output := RequestsChooseDirection(elev)
+		elev = clearRequestsAtCurrentFloor(elev, requestDoneCh)
+		output := requestsChooseDirection(elev)
 		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour
-		//fmt.Println(elev.Behaviour)
 		switch elev.Behaviour {
 		case config.EB_DoorOpen:
 			fmt.Printf("in door timeout")

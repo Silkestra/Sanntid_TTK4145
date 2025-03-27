@@ -26,7 +26,7 @@ func main() {
 
 	// Single elevator channels
 	setDoorCh := make(chan bool)                         // SingleElevator -> Elevio
-	requestDoneCh := make(chan config.ButtonEvent, 1000) // SingleElevator -> Worldview
+	requestDoneCh := make(chan config.ButtonEvent)       // SingleElevator -> Worldview
 	motorDirectionCh := make(chan config.MotorDirection) // SingleElevator -> Elevio
 	stopLampCh := make(chan bool)                        // SingleElevator -> Elevio
 	updatedLocalElevatorCh := make(chan config.Elevator) // SingleElevator -> Worldview
@@ -45,7 +45,6 @@ func main() {
 	drvObstr := make(chan bool)                 // Elevio -> SingleElevator
 	drvStop := make(chan bool)                  // Elevio -> SingleElevator
 
-
 	ID := network.InitNetwork(peerUpdateCh,
 		peerTxEnableCh,
 		transmittWorldviewCh,
@@ -55,8 +54,6 @@ func main() {
 		drvFloors,
 		drvObstr,
 		drvStop)
-
-	var world = worldview.InitWorldview(ID)
 
 	go elevio.ElevatorIORun(motorDirectionCh,
 		setDoorCh,
@@ -89,7 +86,7 @@ func main() {
 		requestDoneCh,
 		requestForLightsCh,
 		worldviewToCabCh,
-		world)
+		ID)
 
 	if config.BackupEnable {
 		go singleElevator.HeartbeatToBackup(ID, port)
