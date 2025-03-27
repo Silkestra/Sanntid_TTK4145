@@ -8,7 +8,7 @@ import (
 )
 
 // Called every time elev.Request is updated, acts according to how FSM is defined for a single elevator
-func FsmOnRequest(elev Elevator, setDoorCh chan<- bool, requestDone chan<- config.ButtonEvent, motorDirectionCh chan<- config.MotorDirection, timerDurationDoorCh chan<- time.Duration, timerDurationAvailableCh chan<- time.Duration) Elevator {
+func FsmOnRequest(elev Elevator, setDoorCh chan<- bool, requestDoneCh chan<- config.ButtonEvent, motorDirectionCh chan<- config.MotorDirection, timerDurationDoorCh chan<- time.Duration, timerDurationAvailableCh chan<- time.Duration) Elevator {
 	switch elev.Behaviour {
 	case config.EB_Idle:
 		output := RequestsChooseDirection(elev)
@@ -56,6 +56,7 @@ func FsmOnDoorTimeout(elev Elevator, requestDoneCh chan<- config.ButtonEvent, mo
 		output := RequestsChooseDirection(elev)
 		elev.Dirn = output.Dirn
 		elev.Behaviour = output.Behaviour
+		fmt.Println("behavior: ", elev.Behaviour)
 		switch elev.Behaviour {
 		case config.EB_DoorOpen:
 			fmt.Printf("in door timeout")

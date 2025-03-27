@@ -9,7 +9,6 @@ import (
 
 type Elevator = config.Elevator
 
-
 // Controls Single Elevator in main-loop. Ran as a goroutine.
 func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][config.N_hall_buttons]bool, // Hallrequests recived from hallarbitration
 	updatedLocalElevatorCh chan<- Elevator, // Output channel for updating single elevator to worldview
@@ -37,8 +36,11 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		select {
 		case hallRequest := <-hallRequestToElevatorCh:
-			elev = updateHallRequests(hallRequest, elev)
-			elev = FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh, timerDoorCh, timerAvailableCh)
+			hasChanged := false
+			elev, hasChanged = updateHallRequests(hallRequest, elev)
+			if hasChanged {
+				elev = FsmOnRequest(elev, setDoorCh, requestDoneCh, motorDirectionCh, timerDoorCh, timerAvailableCh)
+			}
 			if elev.Behaviour == config.EB_Idle {
 				timerAvailableCh <- time.Duration(elev.AvailableDuration_s) * time.Second
 			}
@@ -84,12 +86,14 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 	}
 }
 
-// Timer functionality for available and door 
-func TimerStarting(timer *time.Timer, timerDurationCh chan time.Duration){
-	for{
-		select{
-		case duration:= <- timerDurationCh:
-			timer.Reset(duration)
+// Timer functionality for available and door
+func TimerStarting(timer *time.Timer, timerDurationCh chan time.Duration) {
+	for {
+		select {
+		case duration := <-timerDurationCh:
+			if duration > 0 {
+				timer.Reset(duration)
+			}
 		}
 	}
 }
@@ -121,12 +125,16 @@ func DirectionToString(dirn config.MotorDirection) string {
 		return "disconnected"
 	}
 }
-func updateHallRequests(hallRequest [config.N_floor_const][config.N_hall_buttons]bool, elev Elevator) Elevator {
+func updateHallRequests(hallRequest [config.N_floor_const][config.N_hall_buttons]bool, elev Elevator) (Elevator, bool) {
+	hasChanged := false
 	for i := 0; i < config.N_floor_const; i++ {
+		if elev.Requests[i][0] != hallRequest[i][0] || elev.Requests[i][1] != hallRequest[i][1] {
+			hasChanged = true
+		}
 		elev.Requests[i][0] = hallRequest[i][0]
 		elev.Requests[i][1] = hallRequest[i][1]
 	}
-	return elev
+	return elev, hasChanged
 }
 
 func updateCabRequests(cabRequest []bool, elev Elevator) Elevator {
@@ -138,6 +146,7 @@ func updateCabRequests(cabRequest []bool, elev Elevator) Elevator {
 
 // Initializing single elevator module
 func InitElevator(floor int) Elevator {
-	elev := Elevator{Floor: floor, Dirn: config.MD_Stop, Behaviour: config.EB_Idle, ObstructionActive: false, Available: true, DoorOpenDuration_s: config.Door_open_time, AvailableDuration_s: config.Available_time}
+	elev := Elevator{Floor: floor, Dirn: config.MD_Stop, Behaviour: config.EB_Idle, ObstructionActive: false,
+		Available: true, DoorOpenDuration_s: config.Door_open_time, AvailableDuration_s: config.Available_time}
 	return elev
 }

@@ -26,7 +26,7 @@ func main() {
 
 	// Single elevator channels
 	setDoorCh := make(chan bool)                         // SingleElevator -> Elevio
-	requestDoneCh := make(chan config.ButtonEvent, 1000) // SingleElevator -> Worldview
+	requestDoneCh := make(chan config.ButtonEvent)       // SingleElevator -> Worldview
 	motorDirectionCh := make(chan config.MotorDirection) // SingleElevator -> Elevio
 	stopLampCh := make(chan bool)                        // SingleElevator -> Elevio
 	updatedLocalElevatorCh := make(chan config.Elevator) // SingleElevator -> Worldview

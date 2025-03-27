@@ -12,6 +12,28 @@ var _initialized bool = false
 var _mtx sync.Mutex
 var _conn net.Conn
 
+// Controls elevator hardware in main-loop, through interaction with other modules. Is ran as a goroutine.
+func ElevatorIORun(motorDirectionCh <-chan config.MotorDirection,
+	setDoorCh <-chan bool,
+	drvFloors <-chan int,
+	stopLampCh <-chan bool,
+	requestForLightsCh <-chan [config.N_floor_const][config.N_buttons_const]bool) {
+	for {
+		select {
+		case motorDirn := <-motorDirectionCh:
+			SetMotorDirection(motorDirn)
+		case doorOpen := <-setDoorCh:
+			SetDoorOpenLamp(doorOpen)
+		case floor := <-drvFloors:
+			SetFloorIndicator(floor)
+		case stopLamp := <-stopLampCh:
+			SetStopLamp(stopLamp)
+		case requests := <-requestForLightsCh:
+			setAllLights(requests)
+		}
+	}
+}
+
 // Initializing driver by establishing TCP connection to elevator, and turning of all lights
 func Init(addr string) {
 	if _initialized {
@@ -209,25 +231,3 @@ func setAllLights(HallAndCabReq [config.N_floor_const][config.N_buttons_const]bo
 	}
 }
 
-// Controls elevator hardware in main-loop, through interaction with other modules. Is ran as a goroutine.
-func ElevatorIORun(motorDirectionCh <-chan config.MotorDirection,
-	setDoorCh <-chan bool,
-	drvFloors <-chan int,
-	stopLampCh <-chan bool,
-	requestForLightsCh <-chan [config.N_floor_const][config.N_buttons_const]bool) {
-	for {
-		select {
-		case motorDirn := <-motorDirectionCh:
-			SetMotorDirection(motorDirn)
-		case doorOpen := <-setDoorCh:
-			SetDoorOpenLamp(doorOpen)
-		case floor := <-drvFloors:
-			SetFloorIndicator(floor)
-		case stopLamp := <-stopLampCh:
-			SetStopLamp(stopLamp)
-		case requests := <-requestForLightsCh:
-			setAllLights(requests)
-		}
-	}
-
-}
