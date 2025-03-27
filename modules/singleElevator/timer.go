@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Global variables --> Should probably be changed to ensure 
+// Global variables --> Should probably be changed to ensure no race conditions
 var (
 	timerEndTimeDoor      time.Time
 	timerActiveDoor       bool
@@ -75,22 +75,6 @@ func PollAvailableTimeout(receiver chan<- bool, updatedLocalElevatorCh <-chan El
 		prev = v
 	}
 }
-
-// func PollDoorTimeout(receiver chan<- bool, elev Elevator) {
-// 	prev := false
-// 	for {
-// 		time.Sleep(config.PollRate)
-// 		v := TimerTimedOutDoor(elev)
-
-// 		if v != prev {
-// 			TimerStop("door")
-// 			//time.Sleep(4000 * time.Millisecond)
-// 			fmt.Println("doortimeout")
-// 			receiver <- v
-// 		}
-// 		prev = v
-// 	}
-// }
 
 func PollDoorTimeout(receiver chan<- bool, elev Elevator) {
     prev := false

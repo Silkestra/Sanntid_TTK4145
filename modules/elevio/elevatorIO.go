@@ -36,9 +36,7 @@ func Init(addr string) {
 func InitHardWare(drvButtons chan<- config.ButtonEvent,
 	drvFloors chan<- int,
 	drvObstr chan<- bool,
-	drvStop chan<- bool,
-	drvTimeout chan<- bool,
-	drvTimeoutAvailable chan<- bool) int {
+	drvStop chan<- bool) int {
 	floor := GetFloor()
 	if floor == -1 {
 		SetMotorDirection(config.MD_Up)

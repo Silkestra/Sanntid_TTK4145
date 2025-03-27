@@ -98,7 +98,7 @@ func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons
 	/* fmt.Printf("output: \n")
 	for k, v := range *output {
 		fmt.Printf("%6v :  %+v\n", k, v)
-	} */
+	}  */
 
 	return *output
 
