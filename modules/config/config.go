@@ -15,6 +15,7 @@ const N_elevators int = 3
 const Interval = 15 * time.Millisecond
 const Timeout = 2000 * time.Millisecond
 const BackupEnable bool = false
+const Available_time float64 = 10.0 //seconds
 
 type ButtonType int
 
@@ -54,4 +55,5 @@ type Elevator struct {
 	Available          bool
 	ObstructionActive  bool
 	DoorOpenDuration_s float64
+	AvailableDuration_s float64
 }

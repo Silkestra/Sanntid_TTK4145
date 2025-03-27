@@ -306,7 +306,9 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 	requestDoneCh <-chan config.ButtonEvent, // Receives completed request
 	requestForLightsCh chan<- [config.N_floor_const][config.N_buttons_const]bool, // Communicates with IO-module to set lights
 	worldviewToCabCh chan<- []bool, // Sends cabrequests to single elevator
-	world Worldview) {
+	ID string) {
+
+	world := InitWorldview(ID)
 
 	ticker := time.NewTicker(time.Duration(config.N_send_myworld_rate) * time.Millisecond) // Rate of transmitting myworldview to network
 	defer ticker.Stop()
