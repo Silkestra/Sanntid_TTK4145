@@ -54,6 +54,7 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 	for {
 		select {
 		case peers := <-peerUpdateCh:
+			//world = MarkAsUnknown(peers.New, world)
 			world = MarkAsDisconnected(peers.Lost, world)
 
 		case elev := <-updatedLocalElevatorCh:
@@ -198,6 +199,28 @@ func MarkAsDisconnected(peer_lost []string, myWorld Worldview) Worldview {
 		if num <= 3 && num >= 0 {
 			myWorld.Elevators[num].Behaviour = config.EB_Disconnected
 
+		}
+	}
+	return myWorld
+}
+
+// send peers list from network heartbeat module
+func MarkAsUnknown(peer_new string, myWorld Worldview) Worldview {
+	if peer_new == strconv.Itoa(myWorld.ID) {
+		for i := range myWorld.HallOrderBooks {
+			for j := range myWorld.HallOrderBooks[i] {
+				for k := range myWorld.HallOrderBooks[i][j] {
+					myWorld.HallOrderBooks[i][j][k] = Unknown
+				}
+			}
+		}
+
+		for i := range myWorld.CabOrderBooks[myWorld.ID] {
+			if i != myWorld.ID {
+				for j := range myWorld.CabOrderBooks[myWorld.ID][i] {
+					myWorld.CabOrderBooks[myWorld.ID][i][j] = Unknown
+				}
+			}
 		}
 	}
 	return myWorld

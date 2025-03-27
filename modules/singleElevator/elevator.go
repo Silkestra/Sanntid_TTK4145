@@ -54,6 +54,14 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		case obstruction := <-drvObstr:
 			elev.ObstructionActive = obstruction
+			if obstruction {
+				if elev.Behaviour == config.EB_DoorOpen {
+					maxDuration := time.Duration(1<<63 - 1) // Max duration possible
+					timerDoorCh <- maxDuration
+				}
+			} else {
+				timerDoorCh <- time.Duration(elev.DoorOpenDuration_s) * time.Second
+			}
 
 		case <-drvStop:
 			fmt.Println("Terminating...")
@@ -63,7 +71,7 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		case <-timerDoor.C:
 			fmt.Print("Timeout door")
-			if !elev.ObstructionActive {
+			if !elev.ObstructionActive{
 				elev = FsmOnDoorTimeout(elev, requestDoneCh, motorDirectionCh, setDoorCh, timerDoorCh)
 			}
 
