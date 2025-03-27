@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Global variables
+// Global variables --> Should probably be changed to ensure 
 var (
 	timerEndTimeDoor      time.Time
 	timerActiveDoor       bool
@@ -23,6 +23,7 @@ func TimerStart(duration float64, timerType string) {
 	case "door":
 		fmt.Print("timer started at time, ", time.Now())
 		timerEndTimeDoor = time.Now().Add(time.Duration(duration) * time.Second)
+		fmt.Println("End time should be: ", timerEndTimeDoor)
 		timerActiveDoor = true
 	}
 }
@@ -75,18 +76,38 @@ func PollAvailableTimeout(receiver chan<- bool, updatedLocalElevatorCh <-chan El
 	}
 }
 
-func PollDoorTimeout(receiver chan<- bool, elev Elevator) {
-	prev := false
-	for {
-		time.Sleep(config.PollRate)
-		v := TimerTimedOutDoor(elev)
+// func PollDoorTimeout(receiver chan<- bool, elev Elevator) {
+// 	prev := false
+// 	for {
+// 		time.Sleep(config.PollRate)
+// 		v := TimerTimedOutDoor(elev)
 
-		if v != prev {
-			TimerStop("door")
-			time.Sleep(4000 * time.Millisecond)
-			fmt.Println("doortimeout")
-			receiver <- v
-		}
-		prev = v
-	}
+// 		if v != prev {
+// 			TimerStop("door")
+// 			//time.Sleep(4000 * time.Millisecond)
+// 			fmt.Println("doortimeout")
+// 			receiver <- v
+// 		}
+// 		prev = v
+// 	}
+// }
+
+func PollDoorTimeout(receiver chan<- bool, elev Elevator) {
+    prev := false
+    timeoutHandled := false  // Add a flag to track if timeout was handled
+    for {
+        time.Sleep(config.PollRate)
+        v := TimerTimedOutDoor(elev)
+
+        if v != prev && !timeoutHandled {  // Only handle timeout once
+            timeoutHandled = true
+            TimerStop("door")
+            fmt.Println("doortimeout")
+            receiver <- v
+        } else if !v {
+            timeoutHandled = false  // Reset flag when no timeout
+        }
+        
+        prev = v
+    }
 }

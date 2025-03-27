@@ -116,20 +116,20 @@ func ClearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEve
 	fmt.Println(e.Requests[e.Floor][config.BT_HallUp], e.Requests[e.Floor][config.BT_HallDown])
 	switch e.Dirn {
 	case config.MD_Up:
-		if !requestsAbove(e) && !e.Requests[e.Floor][config.BT_HallUp] {
+		/* if !requestsAbove(e) && !e.Requests[e.Floor][config.BT_HallUp] {
 			e.Requests[e.Floor][config.BT_HallDown] = false
 			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-		}
+		} */
 
 		e.Requests[e.Floor][config.BT_HallUp] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
 		//fmt.Printf("MD_UP")
 
 	case config.MD_Down:
-		if !requestsBelow(e) && !e.Requests[e.Floor][config.BT_HallDown] {
+		/* if !requestsBelow(e) && !e.Requests[e.Floor][config.BT_HallDown] {
 			e.Requests[e.Floor][config.BT_HallUp] = false
 			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-		}
+		} */
 		e.Requests[e.Floor][config.BT_HallDown] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
 		//fmt.Printf("MD_Down")
