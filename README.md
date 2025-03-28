@@ -1,5 +1,5 @@
 # TTK4145 Elevator Project
-====================
+
 Implemented Peer-to-Peer system for several elevators. Uses go-channels to communicate between different modules.  
 All modules have a *"run"-function* that is executed as a goroutine.
 
