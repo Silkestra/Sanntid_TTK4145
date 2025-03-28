@@ -8,7 +8,7 @@ const PollRate = 20 * time.Millisecond
 const N_floor_const int = 4
 const N_buttons_const int = 3
 const N_hall_buttons int = 2
-const N_send_myworld_rate int = 50 //milliseconds
+const N_send_myworld_rate int = 100 //milliseconds
 
 const Door_open_time float64 = 3.0 //seconds
 const N_elevators int = 3

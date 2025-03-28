@@ -33,6 +33,7 @@ type Worldview struct {
 	Elevators      [config.N_elevators]singleElevator.Elevator
 	HallOrderBooks [config.N_elevators][config.N_floor_const][config.N_hall_buttons]RequestStates
 	CabOrderBooks  [config.N_elevators][config.N_elevators][config.N_floor_const]RequestStates
+	NewPeer        [config.N_elevators]bool
 }
 
 // Initializes Wordlview module with all other elevators as Disconnected and all Orderbooks in state Unknown
@@ -143,21 +144,30 @@ func markAsDisconnected(peerLost []string, myWorld Worldview) Worldview {
 		if err != nil {
 			fmt.Printf("invalid ID, must be an integer: %v", err)
 		}
-		if num <= 3 && num >= 0 {
+		if num <= 3 && num >= 0 && num != myWorld.ID {
 			myWorld.Elevators[num].Behaviour = config.EB_Disconnected
+			fmt.Println("mark as disconnected: ", myWorld.Elevators[num].Behaviour)
+
 		}
 	}
-	/* newID, err := strconv.Atoi(newPeer)
-	if err != nil {
-		fmt.Printf("invalid ID new peer, must be an integer: %v", err)
+	fmt.Println("Peer Lost", peerLost)
+	/* 	newID, err := strconv.Atoi(newPeer)
+	   	if err != nil {
+	   		fmt.Printf("invalid ID new peer, must be an integer: %v", err)
+	   	}
+	   	myWorld.Elevators[newID].Behaviour = config.EB_New */
+	if len(peerLost) != 0 {
+		lostid, _ := strconv.Atoi(peerLost[0])
+		fmt.Println(myWorld.Elevators[lostid].Behaviour)
 	}
-	myWorld.Elevators[newID].Behaviour = config.EB_New */
 
 	return myWorld
 }
 
 // Transitions RequestStates in HallOrderBooks
 func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []int) Worldview {
+	//fmt.Println("\n Lost list in cyclic", lost)
+
 	for j := 0; j < config.N_floor_const; j++ {
 		for k := 0; k < config.N_hall_buttons; k++ {
 
@@ -166,9 +176,11 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 			case Unconfirmed:
 				canConfirmOrder := true
 				for n := 0; n < config.N_elevators; n++ {
-					if !slices.Contains(lost, n) || n == myWorld.ID {
+					if !slices.Contains(lost, n) && n != myWorld.ID {
+						fmt.Println("\n SLICES CONTAIN? :", slices.Contains(lost, n))
 						if myWorld.HallOrderBooks[n][j][k] == Done {
 							canConfirmOrder = false
+							fmt.Println("wrong, should not go here")
 							break
 						}
 					}
@@ -179,27 +191,50 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 
 			case Confirmed:
 				doneFound := false
+				confirmedNewFound := false
+				unconfirmedNewFound := false
 				for n := 0; n < config.N_elevators; n++ {
-					if !slices.Contains(lost, n) || n == myWorld.ID { //&& (n != newPeer && newPeer != myWorld.ID) {
+					fmt.Println("\n newpeer check", myWorld.NewPeer, time.Now())
+					if !slices.Contains(lost, n) && n != myWorld.ID && !myWorld.NewPeer[n] { //&& (n != newPeer && newPeer != myWorld.ID) {
 						if myWorld.HallOrderBooks[n][j][k] == Done {
 							doneFound = true
+							fmt.Println("doneFound", time.Now())
 							break
 						}
 					}
+					if myWorld.NewPeer[n] && (myWorld.HallOrderBooks[n][j][k] == Confirmed) {
+						confirmedNewFound = true
+					}
+					if myWorld.NewPeer[n] && (myWorld.HallOrderBooks[n][j][k] == Unconfirmed) {
+						unconfirmedNewFound = true
+					}
 				}
-				if doneFound {
+				if doneFound && !confirmedNewFound {
 					myWorld.HallOrderBooks[myWorld.ID][j][k] = Done
+					fmt.Println("nono its not done", time.Now())
+				}
+				if unconfirmedNewFound {
+					myWorld.HallOrderBooks[myWorld.ID][j][k] = Unconfirmed
 				}
 
 			case Done:
 				unconfirmedFound := false
+				confirmedNewFound := false
 				for n := 0; n < config.N_elevators; n++ {
-					if !slices.Contains(lost, n) || n == myWorld.ID {
+					if !slices.Contains(lost, n) && n != myWorld.ID {
 						if myWorld.HallOrderBooks[n][j][k] == Unconfirmed {
 							unconfirmedFound = true
 							break
 						}
 					}
+					if myWorld.NewPeer[n] && (myWorld.HallOrderBooks[n][j][k] == Confirmed) {
+						confirmedNewFound = true
+						fmt.Println("confirmedNewFound 1")
+					}
+				}
+				if confirmedNewFound {
+					fmt.Println("confirmedNewFound")
+					myWorld.HallOrderBooks[myWorld.ID][j][k] = Confirmed
 				}
 				if unconfirmedFound {
 					myWorld.HallOrderBooks[myWorld.ID][j][k] = Unconfirmed
@@ -213,6 +248,7 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 			}
 		}
 	}
+	fmt.Println("\n peerlist", myWorld.NewPeer, time.Now())
 	return myWorld
 }
 
@@ -224,7 +260,7 @@ func cyclicCounterCabOrderBook(myWorld Worldview, newWorld Worldview, lost []int
 		case Unconfirmed:
 			canConfirmOrder := true
 			for n := 0; n < config.N_elevators; n++ {
-				if !slices.Contains(lost, n) || n == myWorld.ID {
+				if !slices.Contains(lost, n) && n != myWorld.ID {
 					if myWorld.CabOrderBooks[n][myWorld.ID][k] == Done {
 						canConfirmOrder = false
 						break
@@ -238,7 +274,7 @@ func cyclicCounterCabOrderBook(myWorld Worldview, newWorld Worldview, lost []int
 		case Confirmed:
 			doneFound := false
 			for n := 0; n < config.N_elevators; n++ {
-				if !slices.Contains(lost, n) || n == myWorld.ID {
+				if !slices.Contains(lost, n) && n != myWorld.ID {
 					if myWorld.CabOrderBooks[n][myWorld.ID][k] == Done {
 						doneFound = true
 						break
@@ -252,7 +288,7 @@ func cyclicCounterCabOrderBook(myWorld Worldview, newWorld Worldview, lost []int
 		case Done:
 			unconfirmedFound := false
 			for n := 0; n < config.N_elevators; n++ {
-				if !slices.Contains(lost, n) || n == myWorld.ID {
+				if !slices.Contains(lost, n) && n != myWorld.ID {
 					if myWorld.CabOrderBooks[n][myWorld.ID][k] == Unconfirmed {
 						unconfirmedFound = true
 						break
@@ -284,13 +320,16 @@ func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 	var lost []int
 	//var new int
 	for i, elev := range myWorld.Elevators {
+		//fmt.Println("update worldview elev behav", elev.Behaviour)
 		if elev.Behaviour == config.EB_Disconnected {
+			//fmt.Println("\n elev disconnected id:", i)
 			lost = append(lost, i)
 		}
 		/* if elev.Behaviour == config.EB_New {
 			new = i
 		} */
 	}
+	//fmt.Println("\n in updateWorldview lost peers: ", lost)
 
 	myWorld = cyclicCounterHallOrderBook(myWorld, newWorld, lost)
 	myWorld = cyclicCounterCabOrderBook(myWorld, newWorld, lost)
@@ -314,36 +353,48 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 	defer ticker.Stop()
 
 	world := InitWorldview(ID)
+	fmt.Println("Inited : ", world.HallOrderBooks)
 
 	for {
 		select {
 
 		case peers := <-peerUpdateCh:
-			fmt.Println("Peers  ", peers.Peers)
+			fmt.Println("Peers online", peers.Peers)
 			fmt.Println("Peers LOST ", peers.Lost)
-			fmt.Println("Peers  ", peers.New)
+			fmt.Println("Peers NEW", peers.New)
+			newID, _ := strconv.Atoi(peers.New)
+			world.NewPeer[newID] = true
 			world = markAsDisconnected(peers.Lost, world)
+			//world = updateWorldview(oldWorld, world)
 
 		case elev := <-updatedLocalElevatorCh:
 			oldWorld := world
+			//fmt.Println("\n Oldworld", oldWorld.HallOrderBooks[world.ID])
 			world.Elevators[world.ID] = elev
 			world = updateWorldview(oldWorld, world)
+			//fmt.Println("\n New world", world.HallOrderBooks[world.ID])
+			//fmt.Println("\n req for lights updated elev: ", combineHallAndCabReq(world))
 			requestForLightsCh <- combineHallAndCabReq(world)
 
 		case buttonEvent := <-localRequestCh:
 			oldWorld := world
 			world = insertInOrderBook(buttonEvent, world)
 			world = updateWorldview(oldWorld, world)
+			//fmt.Println("\n req for lights localreq button: ", combineHallAndCabReq(world))
 			requestForLightsCh <- combineHallAndCabReq(world)
 			worldviewToCabCh <- MakeCabRequests(world)
 
 		case receivedWorld := <-receiveWorldviewCh:
 			oldWorld := world
+			fmt.Println("\n Oldworld", oldWorld.HallOrderBooks[world.ID], "\n time now", time.Now())
 			world = updateWorldview(world, receivedWorld)
+			fmt.Println("\n New world", world.HallOrderBooks[world.ID], "\n time now", time.Now())
 			if oldWorld != world {
+				//fmt.Println("\n req for lights updated world: ", combineHallAndCabReq(world))
 				requestForLightsCh <- combineHallAndCabReq(world)
 				worldviewToCabCh <- MakeCabRequests(world)
 			}
+			world.NewPeer = [config.N_elevators]bool{}
 		/* 	requestForLightsCh <- combineHallAndCabReq(world)
 		worldviewToCabCh <- MakeCabRequests(world) */
 
@@ -353,6 +404,7 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 			world = doneInOrderBook(world, buttonEvent)
 			//fmt.Println("\n WorldviewRun: requestdonech", time.Now(), world.Elevators[world.ID].Requests)
 			world = updateWorldview(oldWorld, world)
+			//fmt.Println("\n req for lights request done: ", combineHallAndCabReq(world))
 			requestForLightsCh <- combineHallAndCabReq(world)
 
 		case <-ticker.C:
