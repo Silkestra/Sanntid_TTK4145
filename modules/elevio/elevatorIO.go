@@ -35,7 +35,6 @@ func ElevatorIORun(motorDirectionCh <-chan config.MotorDirection,
 
 }
 
-
 // Initalizing elevator hardware in defined floor and starting go threads to interface with IO
 func InitHardWare(drvButtons chan<- config.ButtonEvent,
 	drvFloors chan<- int,
@@ -71,6 +70,8 @@ func InitHardWare(drvButtons chan<- config.ButtonEvent,
 
 	go PollButtons(drvButtons)
 	go PollFloorSensor(drvFloors)
+	go PollObstructionSwitch(drvObstr)
+	go PollStopButton(drvStop)
 
 	return floor
 }
@@ -84,7 +85,6 @@ func setAllLights(HallAndCabReq [config.N_floor_const][config.N_buttons_const]bo
 		}
 	}
 }
-
 
 func SetMotorDirection(dir config.MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})
@@ -227,5 +227,3 @@ func toBool(a byte) bool {
 	}
 	return b
 }
-
-

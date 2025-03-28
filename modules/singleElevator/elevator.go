@@ -66,6 +66,7 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		case obstruction := <-drvObstr:
 			elev.ObstructionActive = obstruction
+			fmt.Println("obstructioin:", obstruction)
 			if !obstruction {
 				timerStart("door")
 			}
