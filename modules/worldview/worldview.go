@@ -36,6 +36,66 @@ type Worldview struct {
 	NewPeer        [config.N_elevators]bool
 }
 
+// Controls Worldview-module in main-loop. Ran as a goroutine
+func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and new elevators from network module
+	localRequestCh <-chan config.ButtonEvent, // Local request event in elevator
+	updatedLocalElevatorCh <-chan Elevator, // Receives newest updates on own elevator
+	receiveWorldviewCh <-chan Worldview, // Worldview received over network, to be merged
+	worldviewToArbitrationCh chan<- Worldview, // Sends current worldview to hallarbitration logic
+	transmittWorldviewCh chan<- Worldview, // Transmitts own worldview to network
+	requestDoneCh <-chan config.ButtonEvent, // Receives completed request
+	requestForLightsCh chan<- [config.N_floor_const][config.N_buttons_const]bool, // Communicates with IO-module to set lights
+	worldviewToCabCh chan<- []bool, // Sends cabrequests to single elevator
+	ID string) {
+
+	ticker := time.NewTicker(time.Duration(config.N_send_myworld_rate) * time.Millisecond)
+	defer ticker.Stop()
+
+	world := InitWorldview(ID)
+
+	for {
+		select {
+
+		case peers := <-peerUpdateCh:
+			newID, _ := strconv.Atoi(peers.New)
+			world.NewPeer[newID] = true
+			world = markAsDisconnected(peers.Lost, world)
+
+		case elev := <-updatedLocalElevatorCh:
+			oldWorld := world
+			world.Elevators[world.ID] = elev
+			world = updateWorldview(oldWorld, world)
+			requestForLightsCh <- combineHallAndCabReq(world)
+
+		case buttonEvent := <-localRequestCh:
+			oldWorld := world
+			world = insertInOrderBook(buttonEvent, world)
+			world = updateWorldview(oldWorld, world)
+			requestForLightsCh <- combineHallAndCabReq(world)
+			worldviewToCabCh <- MakeCabRequests(world)
+
+		case receivedWorld := <-receiveWorldviewCh:
+			oldWorld := world
+			world = updateWorldview(world, receivedWorld)
+			if oldWorld != world {
+				requestForLightsCh <- combineHallAndCabReq(world)
+				worldviewToCabCh <- MakeCabRequests(world)
+			}
+			world.NewPeer = [config.N_elevators]bool{}
+
+		case buttonEvent := <-requestDoneCh:
+			oldWorld := world
+			world = doneInOrderBook(world, buttonEvent)
+			world = updateWorldview(oldWorld, world)
+			requestForLightsCh <- combineHallAndCabReq(world)
+
+		case <-ticker.C:
+			worldviewToArbitrationCh <- world
+			transmittWorldviewCh <- world
+		}
+	}
+}
+
 // Initializes Wordlview module with all other elevators as Disconnected and all Orderbooks in state Unknown
 func InitWorldview(id string) Worldview {
 	num, err := strconv.Atoi(id)
@@ -101,9 +161,9 @@ func MakeCabRequests(world Worldview) []bool {
 }
 
 func combineHallAndCabReq(myWorld Worldview) [config.N_floor_const][config.N_buttons_const]bool {
-	halls := MakeHallRequests(myWorld)                         
-	cabs := MakeCabRequests(myWorld)                                
-	var combined [config.N_floor_const][config.N_buttons_const]bool 
+	halls := MakeHallRequests(myWorld)
+	cabs := MakeCabRequests(myWorld)
+	var combined [config.N_floor_const][config.N_buttons_const]bool
 
 	for floor := 0; floor < config.N_floor_const; floor++ {
 		combined[floor][0] = halls[floor][0] // Hall up
@@ -179,7 +239,7 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 				confirmedNewFound := false
 				unconfirmedNewFound := false
 				for n := 0; n < config.N_elevators; n++ {
-					if !slices.Contains(lost, n) && n != myWorld.ID && !myWorld.NewPeer[n] { 
+					if !slices.Contains(lost, n) && n != myWorld.ID && !myWorld.NewPeer[n] {
 						if myWorld.HallOrderBooks[n][j][k] == Done {
 							doneFound = true
 							break
@@ -192,11 +252,11 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 						unconfirmedNewFound = true
 					}
 				}
-				if doneFound && !confirmedNewFound {
-					myWorld.HallOrderBooks[myWorld.ID][j][k] = Done
-				}
 				if unconfirmedNewFound {
 					myWorld.HallOrderBooks[myWorld.ID][j][k] = Unconfirmed
+				}
+				if doneFound && !confirmedNewFound {
+					myWorld.HallOrderBooks[myWorld.ID][j][k] = Done
 				}
 
 			case Done:
@@ -307,64 +367,4 @@ func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 	myWorld = cyclicCounterCabOrderBook(myWorld, newWorld, lost)
 
 	return myWorld
-}
-
-// Controls Worldview-module in main-loop. Ran as a goroutine
-func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and new elevators from network module
-	localRequestCh <-chan config.ButtonEvent, // Local request event in elevator
-	updatedLocalElevatorCh <-chan Elevator, // Receives newest updates on own elevator
-	receiveWorldviewCh <-chan Worldview, // Worldview received over network, to be merged
-	worldviewToArbitrationCh chan<- Worldview, // Sends current worldview to hallarbitration logic
-	transmittWorldviewCh chan<- Worldview, // Transmitts own worldview to network
-	requestDoneCh <-chan config.ButtonEvent, // Receives completed request
-	requestForLightsCh chan<- [config.N_floor_const][config.N_buttons_const]bool, // Communicates with IO-module to set lights
-	worldviewToCabCh chan<- []bool, // Sends cabrequests to single elevator
-	ID string) {
-
-	ticker := time.NewTicker(time.Duration(config.N_send_myworld_rate) * time.Millisecond) // Rate of transmitting myworldview to network
-	defer ticker.Stop()
-
-	world := InitWorldview(ID)
-
-	for {
-		select {
-
-		case peers := <-peerUpdateCh:
-			newID, _ := strconv.Atoi(peers.New)
-			world.NewPeer[newID] = true
-			world = markAsDisconnected(peers.Lost, world)
-
-		case elev := <-updatedLocalElevatorCh:
-			oldWorld := world
-			world.Elevators[world.ID] = elev
-			world = updateWorldview(oldWorld, world)
-			requestForLightsCh <- combineHallAndCabReq(world)
-
-		case buttonEvent := <-localRequestCh:
-			oldWorld := world
-			world = insertInOrderBook(buttonEvent, world)
-			world = updateWorldview(oldWorld, world)
-			requestForLightsCh <- combineHallAndCabReq(world)
-			worldviewToCabCh <- MakeCabRequests(world)
-
-		case receivedWorld := <-receiveWorldviewCh:
-			oldWorld := world
-			world = updateWorldview(world, receivedWorld)
-			if oldWorld != world {
-				requestForLightsCh <- combineHallAndCabReq(world)
-				worldviewToCabCh <- MakeCabRequests(world)
-			}
-			world.NewPeer = [config.N_elevators]bool{}
-
-		case buttonEvent := <-requestDoneCh:
-			oldWorld := world
-			world = doneInOrderBook(world, buttonEvent)
-			world = updateWorldview(oldWorld, world)
-			requestForLightsCh <- combineHallAndCabReq(world)
-
-		case <-ticker.C:
-			worldviewToArbitrationCh <- world
-			transmittWorldviewCh <- world
-		}
-	}
 }

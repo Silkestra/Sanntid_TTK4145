@@ -16,8 +16,6 @@ type Elevator = singleElevator.Elevator
 func main() {
 	port := os.Args[2] // Reads port from terminal
 
-	elevio.Init("localhost:" + port)
-
 	// Network channels
 	peerTxEnableCh := make(chan bool)
 	peerUpdateCh := make(chan peers.PeerUpdate)            // Network -> Worldview
@@ -53,7 +51,7 @@ func main() {
 	initedFloor := elevio.InitHardWare(drvButtons,
 		drvFloors,
 		drvObstr,
-		drvStop)
+		drvStop, "localhost:"+port)
 
 	go elevio.ElevatorIORun(motorDirectionCh,
 		setDoorCh,
@@ -78,7 +76,7 @@ func main() {
 		ID)
 
 	go worldview.WorldviewRun(peerUpdateCh,
-		drvButtons, //localRequestsCh in Worldview
+		drvButtons,
 		updatedLocalElevatorCh,
 		recieveWorldviewCh,
 		worldviewToArbitrationCh,

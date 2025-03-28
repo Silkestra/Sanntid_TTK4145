@@ -25,8 +25,21 @@ type HRAInput struct {
 	States       map[string]HRAElevState       `json:"states"`
 }
 
+// Handles hallarbitration logic in main-loop. Receives worldview-struct and returns assigned requests to elevator-module. Is ran as a goroutine.
+func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
+	hallRequestToElevatorCh chan<- [config.N_floor_const][config.N_hall_buttons]bool,
+	ID string) {
+	for {
+		select {
+		case worldToArbitration := <-worldViewToArbitrationCh:
+			hallRequestToElevatorCh <- hallassignerToElevRequest(hallAssigner(worldToArbitration), ID)
+		}
+	}
+}
+
+
 // Converting from elevator and worlview type to HRAElevState type
-func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
+func fillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	switch elev.Behaviour {
 	case config.EB_Idle, config.EB_Moving, config.EB_DoorOpen:
 		return HRAElevState{
@@ -43,10 +56,10 @@ func FillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 }
 
 // Converting from worldview type to correct input-format for hallrequest assigner HRAInput
-func FillHRAInput(world worldview.Worldview) HRAInput {
+func fillHRAInput(world worldview.Worldview) HRAInput {
 	states := make(map[string]HRAElevState)
 	for key, elev := range world.Elevators {
-		elev_state := FillHRAElevState(elev, world)
+		elev_state := fillHRAElevState(elev, world)
 		if !isEmptyHRAElevState(elev_state) && !(elev.Behaviour == config.EB_Disconnected || (!elev.Available && key != world.ID)) {
 			states[strconv.Itoa(key)] = elev_state
 		}
@@ -62,7 +75,7 @@ func isEmptyHRAElevState(state HRAElevState) bool {
 }
 
 // Interacts with (gives input and returns output from) Hallassigner executable
-func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons]bool {
+func hallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons]bool {
 	hraExecutable := ""
 	switch runtime.GOOS {
 	case "linux":
@@ -73,7 +86,7 @@ func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons
 		panic("OS not supported")
 	}
 
-	input := FillHRAInput(world)
+	input := fillHRAInput(world)
 
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
@@ -95,17 +108,12 @@ func HallAssigner(world worldview.Worldview) map[string][][config.N_hall_buttons
 
 	}
 
-	/* fmt.Printf("output: \n")
-	for k, v := range *output {
-		fmt.Printf("%6v :  %+v\n", k, v)
-	}  */
-
 	return *output
 
 }
 
 // Processess output from Hallassigner-function, returns requests for id
-func HallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool, id string) [config.N_floor_const][config.N_hall_buttons]bool {
+func hallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool, id string) [config.N_floor_const][config.N_hall_buttons]bool {
 	orders := hallmap[id]
 	var requests [config.N_floor_const][config.N_hall_buttons]bool
 	for i, ordersOnFloor := range orders {
@@ -115,15 +123,3 @@ func HallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool,
 	return requests
 }
 
-// Handles hallarbitration logic in main-loop. Receives worldview-struct and returns assigned requests to elevator-module. Is ran as a goroutine.
-func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
-	hallRequestToElevatorCh chan<- [config.N_floor_const][config.N_hall_buttons]bool,
-	ID string) {
-	for {
-		select {
-		case worldToArbitration := <-worldViewToArbitrationCh:
-			//fmt.Println("\n In hallarbitration", (HallassignerToElevRequest(HallAssigner(worldToArbitration), ID)))
-			hallRequestToElevatorCh <- HallassignerToElevRequest(HallAssigner(worldToArbitration), ID)
-		}
-	}
-}
