@@ -113,47 +113,20 @@ func clearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEve
 		if !requestsBelow(e) && !e.Requests[e.Floor][config.BT_HallDown] {
 			e.Requests[e.Floor][config.BT_HallUp] = false
 			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
-			fmt.Println("1")
 		}
 		e.Requests[e.Floor][config.BT_HallDown] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-		//fmt.Printf("MD_Down")
-		fmt.Println("2")
 
 	case config.MD_Up:
 		if !requestsAbove(e) && !e.Requests[e.Floor][config.BT_HallUp] {
 			e.Requests[e.Floor][config.BT_HallDown] = false
 			requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-			fmt.Println("3")
 		}
 
 		e.Requests[e.Floor][config.BT_HallUp] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
-		//fmt.Printf("MD_UP")
-		fmt.Println("4")
 
 	case config.MD_Stop:
-		//default:
-		// if e.Requests[e.Floor][config.BT_HallUp] && e.Requests[e.Floor][config.BT_HallDown] {
-		// 	e.Requests[e.Floor][config.BT_HallUp] = false
-		// 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
-		// 	//fmt.Println("Two")
-		// 	//TimerStart(e.DoorOpenDuration_s, "door")
-		// 	return e
-		// } else {
-		// 	if e.Requests[e.Floor][config.BT_HallUp] {
-		// 		e.Requests[e.Floor][config.BT_HallUp] = false
-		// 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
-		// 		//fmt.Println("Two Up")
-		// 		return e
-		// 	}
-		// 	if e.Requests[e.Floor][config.BT_HallDown] {
-		// 		e.Requests[e.Floor][config.BT_HallDown] = false
-		// 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallDown}
-		// 		//fmt.Println("Two Down")
-		// 		return e
-		// 	}
-		// }
 		e.Requests[e.Floor][config.BT_HallUp] = false
 		requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_HallUp}
 		e.Requests[e.Floor][config.BT_HallDown] = false

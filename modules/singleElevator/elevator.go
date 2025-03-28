@@ -36,11 +36,7 @@ func DirectionToString(dirn config.MotorDirection) string {
 	}
 }
 func updateHallRequests(hallRequest [config.N_floor_const][config.N_hall_buttons]bool, elev Elevator) Elevator {
-	//hasChanged := false
 	for i := 0; i < config.N_floor_const; i++ {
-		/* if elev.Requests[i][0] != hallRequest[i][0] || elev.Requests[i][1] != hallRequest[i][1] {
-			hasChanged = true
-		} */
 		elev.Requests[i][0] = hallRequest[i][0]
 		elev.Requests[i][1] = hallRequest[i][1]
 	}
@@ -73,13 +69,14 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 	worldviewToCabCh <-chan []bool, // Recieves cabrequests from Worldview
 	initedFloor int) {
 
+		
 	elev := InitElevator(initedFloor)
 	drvTimeoutDoor := make(chan bool)      // Elevio -> SingleElevator
 	drvTimeoutAvailable := make(chan bool) // Elevio -> SingleElevator
 	updatedLocalElevatorForTimer := make(chan config.Elevator)
 
 	go PollDoorTimeout(drvTimeoutDoor, elev)
-	go PollAvailableTimeout(drvTimeoutAvailable, updatedLocalElevatorForTimer) //endret fra elev til updatedElevatorCH for å få oppdatert elevator
+	go PollAvailableTimeout(drvTimeoutAvailable, updatedLocalElevatorForTimer) 
 
 	for {
 		updatedLocalElevatorCh <- elev
@@ -87,13 +84,7 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		select {
 		case hallRequest := <-hallRequestToElevatorCh:
-			//fmt.Println("\nrequest recieved: ", time.Now())
-			//fmt.Println("\n  requests:", hallRequest)
-			//hasChanged := false
 			elev = updateHallRequests(hallRequest, elev)
-			/* if hasChanged {
-				elev = FsmOnRequest(elev, setDoorCh, motorDirectionCh)
-			} */
 			elev = FsmOnRequest(elev, setDoorCh, motorDirectionCh)
 			if elev.Behaviour == config.EB_Idle {
 				TimerStart(elev.DoorOpenDuration_s, "available")
@@ -101,7 +92,6 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 
 		case cabRequest := <-worldviewToCabCh:
 			elev = updateCabRequests(cabRequest, elev)
-			//fmt.Println("\n in elevator on cabrequest event: ", elev.Requests)
 			elev = FsmOnRequest(elev, setDoorCh, motorDirectionCh)
 
 		case floor := <-drvFloors:
