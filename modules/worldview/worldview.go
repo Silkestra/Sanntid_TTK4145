@@ -72,14 +72,12 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 			worldviewToCabCh <- MakeCabRequests(world)
 
 		case receivedWorld := <-receiveWorldviewCh:
-			fmt.Println("Received world, check my view on him", world.HallOrderBooks[receivedWorld.ID])
+			fmt.Println("Received world, check my view on him", receivedWorld.HallOrderBooks[receivedWorld.ID])
 			oldWorld := world
 			fmt.Println("OldWorld:", oldWorld.HallOrderBooks[world.ID])
-			world = updateWorldview(world, receivedWorld)
-			if oldWorld != world {
-				requestForLightsCh <- combineHallAndCabReq(world)
-				worldviewToCabCh <- MakeCabRequests(world)
-			}
+			world = updateWorldview(oldWorld, receivedWorld)
+			requestForLightsCh <- combineHallAndCabReq(world)
+			worldviewToCabCh <- MakeCabRequests(world)
 			fmt.Println("NewWorld:", world.HallOrderBooks[world.ID])
 
 		case buttonEvent := <-requestDoneCh:
@@ -241,6 +239,7 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 					if !slices.Contains(lost, n) && n != myWorld.ID {
 						if myWorld.HallOrderBooks[n][j][k] == Done {
 							canConfirmOrder = false
+							break
 						}
 					}
 				}
@@ -257,6 +256,7 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 						if myWorld.HallOrderBooks[n][j][k] == Done {
 							doneFound = true
 							fmt.Printf("no dont ")
+							break
 						}
 					}
 					/* if myWorld.ID != n && (myWorld.HallOrderBooks[n][j][k] == Confirmed) {
@@ -400,7 +400,7 @@ func mergeSpecial(myWorld Worldview, newWorld Worldview) Worldview {
 
 	}
 
-	myWorld.HallOrderBooks[newWorld.ID] = myWorld.HallOrderBooks[myWorld.ID]
+	//myWorld.HallOrderBooks[newWorld.ID] = myWorld.HallOrderBooks[myWorld.ID]
 	return myWorld
 }
 
@@ -416,9 +416,13 @@ func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 			}
 		}
 	}
-
+	fmt.Println("lost list", lost)
 	if allUnknown(myWorld, newWorld.ID) && allUnknown(newWorld, myWorld.ID) {
-		return mergeSpecial(myWorld, newWorld)
+		myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
+		myWorld.HallOrderBooks[newWorld.ID] = newWorld.HallOrderBooks[newWorld.ID]
+
+		myWorld = mergeSpecial(myWorld, newWorld)
+		return myWorld
 
 	} else {
 		myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
@@ -431,6 +435,7 @@ func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 
 		return myWorld
 	}
+
 }
 
 /* // Updates worldview by merging received worldview into own worldview
