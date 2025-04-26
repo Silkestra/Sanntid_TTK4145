@@ -89,7 +89,7 @@ func WorldviewRun(peerUpdateCh <-chan peers.PeerUpdate, // Updates on lost and n
 	}
 }
 
-// Initializes Wordlview module with all Orderbooks in state Unknown
+// Initializes Wordlview module with all other elevators as Disconnected and all Orderbooks in state Unknown
 func InitWorldview(id string) Worldview {
 	num, err := strconv.Atoi(id)
 	if err != nil {
@@ -126,7 +126,7 @@ func setAllStatesUnknown(HallOrderBooks [config.N_elevators][config.N_floor_cons
 	return HallOrderBooks, CabOrderBooks
 }
 
-// Send peers list from network heartbeat module
+// send peers list from network heartbeat module
 func MarkAsUnknown(ID int, myWorld Worldview) Worldview {
 	if ID != myWorld.ID {
 		for i := range myWorld.HallOrderBooks[ID] {
@@ -197,7 +197,6 @@ func doneInOrderBook(myWorld Worldview, requestDoneCh config.ButtonEvent) Worldv
 
 	} else {
 		myWorld.HallOrderBooks[myWorld.ID][floor][button] = Done
-		fmt.Println("sets done", myWorld.HallOrderBooks[myWorld.ID][floor][button])
 	}
 	return myWorld
 }
@@ -246,6 +245,7 @@ func cyclicCounterHallOrderBook(myWorld Worldview, newWorld Worldview, lost []in
 							break
 						}
 					}
+
 				}
 				if doneFound {
 					myWorld.HallOrderBooks[myWorld.ID][j][k] = Done
@@ -345,7 +345,7 @@ func allUnknown(world Worldview, ID int) bool {
 	return allIsUnknown
 }
 
-// If all cases are Unknown, merge using this method
+// Merge function ran specifically when an elevator joins the network, with RequestStates for other elevators marked as Unknown
 func mergeUnknown(myWorld Worldview, newWorld Worldview) Worldview {
 
 	for j := 0; j < config.N_floor_const; j++ {
@@ -353,8 +353,8 @@ func mergeUnknown(myWorld Worldview, newWorld Worldview) Worldview {
 			switch myWorld.HallOrderBooks[myWorld.ID][j][k] {
 			case Unconfirmed:
 			case Done:
-				if !(newWorld.HallOrderBooks[newWorld.ID][j][k] == Unknown) {
-					myWorld.HallOrderBooks[myWorld.ID][j][k] = newWorld.HallOrderBooks[newWorld.ID][j][k]
+				if !(newWorld.HallOrderBooks[newWorld.ID][j][k] == Unknown) && !(newWorld.HallOrderBooks[newWorld.ID][j][k] == Done) {
+					myWorld.HallOrderBooks[myWorld.ID][j][k] = Unconfirmed
 				}
 			case Confirmed:
 			case Unknown:
@@ -362,11 +362,12 @@ func mergeUnknown(myWorld Worldview, newWorld Worldview) Worldview {
 			default:
 			}
 		}
+
 	}
 	return myWorld
 }
 
-// Updates worldview by merging received worldview into own worldview
+// Updates worldview by merging received worldview into own worldview. Running mergeUnknown when rejoining network. Cyclic counter for Cab stays same
 func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 
 	var lost []int
@@ -378,14 +379,15 @@ func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 			}
 		}
 	}
-
-	if allUnknown(myWorld, newWorld.ID) && allUnknown(newWorld, myWorld.ID) {
+	if allUnknown(myWorld, newWorld.ID) && allUnknown(newWorld, myWorld.ID) && (newWorld.ID != myWorld.ID) {
 		myWorld.Elevators[newWorld.ID] = newWorld.Elevators[newWorld.ID]
-		myWorld.HallOrderBooks[newWorld.ID] = newWorld.HallOrderBooks[newWorld.ID]
+		myWorld = mergeUnknown(myWorld, newWorld)
+		if myWorld.HallOrderBooks[myWorld.ID] == newWorld.HallOrderBooks[newWorld.ID] {
+			myWorld.HallOrderBooks[newWorld.ID] = myWorld.HallOrderBooks[myWorld.ID]
+		}
+		
 		myWorld.CabOrderBooks[newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID]
 		myWorld.CabOrderBooks[myWorld.ID][newWorld.ID] = newWorld.CabOrderBooks[newWorld.ID][newWorld.ID]
-
-		myWorld = mergeUnknown(myWorld, newWorld)
 		myWorld = cyclicCounterCabOrderBook(myWorld, newWorld, lost)
 
 		return myWorld
@@ -401,5 +403,4 @@ func updateWorldview(myWorld Worldview, newWorld Worldview) Worldview {
 
 		return myWorld
 	}
-
 }

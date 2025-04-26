@@ -2,7 +2,6 @@ package singleElevator
 
 import (
 	"Driver-go/modules/config"
-	"fmt"
 )
 
 type Button = config.ButtonType
@@ -102,11 +101,9 @@ func requestsShouldStop(e Elevator) bool {
 	}
 }
 
-
 func clearRequestsAtCurrentFloor(e Elevator, requestDone chan<- config.ButtonEvent) Elevator {
 	e.Requests[e.Floor][config.BT_Cab] = false
 	requestDone <- config.ButtonEvent{Floor: e.Floor, Button: config.BT_Cab}
-	fmt.Println(e.Requests[e.Floor][config.BT_HallUp], e.Requests[e.Floor][config.BT_HallDown])
 	switch e.Dirn {
 
 	case config.MD_Down:

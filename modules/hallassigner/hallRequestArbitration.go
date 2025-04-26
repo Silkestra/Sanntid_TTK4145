@@ -37,7 +37,6 @@ func HallArbitrationRun(worldViewToArbitrationCh <-chan worldview.Worldview,
 	}
 }
 
-
 // Converting from elevator and worlview type to HRAElevState type
 func fillHRAElevState(elev Elevator, world worldview.Worldview) HRAElevState {
 	switch elev.Behaviour {
@@ -122,4 +121,3 @@ func hallassignerToElevRequest(hallmap map[string][][config.N_hall_buttons]bool,
 	}
 	return requests
 }
-

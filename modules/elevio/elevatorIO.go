@@ -80,7 +80,6 @@ func InitHardWare(drvButtons chan<- config.ButtonEvent,
 func setAllLights(HallAndCabReq [config.N_floor_const][config.N_buttons_const]bool) {
 	for floor := 0; floor < config.N_floor_const; floor++ {
 		for btn := 0; btn < config.N_buttons_const; btn++ {
-
 			SetButtonLamp(config.ButtonType(btn), floor, HallAndCabReq[floor][btn])
 		}
 	}

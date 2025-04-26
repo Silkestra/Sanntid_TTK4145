@@ -9,7 +9,6 @@ import (
 
 type Elevator = config.Elevator
 
-
 // Controls Single Elevator in main-loop. Ran as a goroutine.
 func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][config.N_hall_buttons]bool, // Hallrequests recived from hallarbitration
 	updatedLocalElevatorCh chan<- Elevator, // Output channel for updating single elevator to worldview
@@ -102,7 +101,6 @@ func SingleElevatorRun(hallRequestToElevatorCh <-chan [config.N_floor_const][con
 		}
 	}
 }
-
 
 func EbToString(eb config.ElevatorBehaviour) string {
 	switch eb {

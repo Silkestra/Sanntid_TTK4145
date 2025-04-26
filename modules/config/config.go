@@ -10,7 +10,7 @@ const N_buttons_const int = 3
 const N_hall_buttons int = 2
 const N_send_myworld_rate int = 100 //milliseconds
 
-const Door_open_time float64 = 3.0 //seconds
+const Door_open_time float64 = 3.0  //seconds
 const Available_time float64 = 10.0 //seconds
 const N_elevators int = 3
 const Interval = 15 * time.Millisecond
@@ -48,10 +48,10 @@ const (
 )
 
 type Elevator struct {
-	Floor              int
-	Dirn               MotorDirection
-	Requests           [N_floor_const][N_buttons_const]bool
-	Behaviour          ElevatorBehaviour
-	Available          bool
-	ObstructionActive  bool
+	Floor             int
+	Dirn              MotorDirection
+	Requests          [N_floor_const][N_buttons_const]bool
+	Behaviour         ElevatorBehaviour
+	Available         bool
+	ObstructionActive bool
 }
